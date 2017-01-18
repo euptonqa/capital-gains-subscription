@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,9 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.Future
 
-/**
-  * Created by james-forster on 26/08/16.
-  */
 trait MicroserviceHelloWorld extends BaseController {
 
-	def hello() = Action.async { implicit request =>
+	val hello = Action.async { implicit request =>
 		Future.successful(Ok("Hello world"))
 	}
 }
