@@ -16,24 +16,15 @@
 
 package connectors
 
+import com.google.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.http.HttpResponse
 
 import scala.concurrent.Future
 
-
-object DESConnector extends DESConnector {
+@Singleton
+class DESConnector @Inject()() {
 
   def subscribe(): Future[HttpResponse] = ???
 
   def register(): Future[HttpResponse] = ???
-
-}
-
-trait DESConnector {
-
-  //Methods have been predefined to avoid merge conflicts
-
-  def subscribe()
-
-  def register()
 }
