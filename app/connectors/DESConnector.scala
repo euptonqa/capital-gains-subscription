@@ -108,6 +108,4 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
     private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
       http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
 
-
-
 }

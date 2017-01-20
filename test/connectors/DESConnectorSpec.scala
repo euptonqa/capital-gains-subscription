@@ -34,6 +34,8 @@ import org.scalatest.BeforeAndAfter
 
 import scala.concurrent.ExecutionContext.global
 
+import play.api.http.Status._
+
 
 class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter with WithFakeApplication {
 
@@ -69,9 +71,9 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
       }
     }
 
-    successDesResponseTest(" successful", 200)
-    successDesResponseTest("n accepted", 202)
-    successDesResponseTest(" conflicted", 409)
+    successDesResponseTest(" successful", OK)
+    successDesResponseTest("n accepted", ACCEPTED)
+    successDesResponseTest(" conflicted", CONFLICT)
 
     def failureDesErrorResponse(exceptionType: Exception, exceptionStringName: String): Unit = {
       s"for a request that triggers $exceptionStringName, return a DESErrorResponse" in new DESConnector {
@@ -92,14 +94,14 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
     failureDesErrorResponse(new BadGatewayException(""), "the Bad Gateway Exception")
     failureDesErrorResponse(new Exception(""), "an uncaught exception")
 
-    "for an invalid request, return the reason" in new DESConnector {
+    "for a bad request, return the reason" in new DESConnector {
       val nino = createRandomNino
       override val http = mock[WSHttp]
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(400, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
+        thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
 
       lazy val result = await(this.obtainBp(nino)(hc, global))
 
