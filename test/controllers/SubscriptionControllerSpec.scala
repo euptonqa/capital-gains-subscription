@@ -16,6 +16,7 @@
 
 package controllers
 
+import auth.AuthorisedActions
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
@@ -26,9 +27,13 @@ import scala.concurrent.Future
 
 class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFakeApplication {
 
-  def setupController(response: String, errors: Boolean): SubscriptionController = {
+  def setupController(response: String, errors: Boolean, authorised: Boolean): SubscriptionController = {
 
-    new SubscriptionController {
+    val actions = new AuthorisedActions {
+      override val stubbedBoolean = authorised
+    }
+
+    new SubscriptionController(actions) {
       override def subscribeUser(): Future[String] = if (errors) {
         Future.failed(new Exception(response))
       } else {
@@ -40,7 +45,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
   "Calling the subscribeResidentIndividual action" when {
 
     "the service returns a valid string" should {
-      lazy val controller = setupController("CGT123456", errors = false)
+      lazy val controller = setupController("CGT123456", errors = false, authorised = true)
       lazy val result = controller.subscribeResidentIndividual(FakeRequest("GET", ""))
 
       "return a status of 200" in {
@@ -62,7 +67,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
     }
 
     "the service returns an error" should {
-      lazy val controller = setupController("Error message", errors = true)
+      lazy val controller = setupController("Error message", errors = true, authorised = true)
       lazy val result = controller.subscribeResidentIndividual(FakeRequest("GET", ""))
 
       "return a status of 500" in {
@@ -83,6 +88,28 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
         "has the message from the exception" in {
           (json \ "message").as[String] shouldBe "Error message"
+        }
+      }
+    }
+
+    "the user is unauthorised" should {
+      lazy val controller = setupController("CGT123456", errors = false, authorised = false)
+      lazy val result = controller.subscribeResidentIndividual(FakeRequest("GET", ""))
+
+      "return a response" which {
+        val data = contentAsString(result)
+        val json = Json.parse(data)
+
+        "is of the type json" in {
+          contentType(result) shouldBe Some("application/json")
+        }
+
+        "has a status code of 401" in {
+          (json \ "code").as[Int] shouldBe 401
+        }
+
+        "has the message 'Unauthorised'" in {
+          (json \ "message").as[String] shouldBe "Unauthorised"
         }
       }
     }

@@ -16,6 +16,7 @@
 
 package controllers
 
+import auth.AuthorisedActions
 import com.google.inject.{Inject, Singleton}
 import models.ExceptionResponse
 import play.api.libs.json.Json
@@ -26,7 +27,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class SubscriptionController @Inject()() extends BaseController {
+class SubscriptionController @Inject()(actions: AuthorisedActions) extends BaseController {
 
   //TODO add authorisation check for backend
 
@@ -35,10 +36,13 @@ class SubscriptionController @Inject()() extends BaseController {
 
   val subscribeResidentIndividual = Action.async { implicit request =>
 
-    subscribeUser().map {
-      case reference => Ok(Json.toJson(reference))
-    } recoverWith {
-      case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+    actions.authorisedResidentIndividualAction {
+      case true => subscribeUser().map {
+        case reference => Ok(Json.toJson(reference))
+      } recoverWith {
+        case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+      }
+      case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
     }
   }
 }
