@@ -84,7 +84,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
           (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
           thenReturn(Future.failed(exceptionType))
 
-        lazy val result = await(this.obtainBp(nino)(hc, global))
+        val result = await(this.obtainBp(nino)(hc, global))
 
         result shouldBe DesErrorResponse
       }
@@ -103,7 +103,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
+      val result = await(this.obtainBp(nino)(hc, global))
 
       result shouldBe InvalidDesRequest("etmp reason")
     }
@@ -116,7 +116,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new NotFoundException("")))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
+      val result = await(this.obtainBp(nino)(hc, global))
 
       result shouldBe NotFoundDesResponse
     }
