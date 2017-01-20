@@ -30,7 +30,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
   def setupController(response: String, errors: Boolean, authorised: Boolean): SubscriptionController = {
 
     val actions = new AuthorisedActions {
-      override val stubbedBoolean = authorised
+      override def residentIndividualAuthCheck() = authorised
     }
 
     new SubscriptionController(actions) {

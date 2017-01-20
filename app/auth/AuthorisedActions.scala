@@ -24,13 +24,12 @@ import scala.concurrent.Future
 @Singleton
 class AuthorisedActions @Inject()() {
 
-  val stubbedBoolean = true
+  def residentIndividualAuthCheck(): Boolean = true
 
-  private def createAuthorisedAction(f: => Boolean => Future[Result]): Future[Result] = {
-
-    f(stubbedBoolean)
+  private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
+    f(authCheck)
   }
 
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action)
+  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
 
 }
