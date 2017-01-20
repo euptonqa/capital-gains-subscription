@@ -56,7 +56,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
     implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
     def successDesResponseTest(requestType: String, httpResponseCode: Int): Unit = {
-      s"for a$requestType BP request return a SuccessDesResponse" in new DESConnector {
+      s"calling a$requestType request should return a SuccessDesResponse" in new DESConnector {
         val nino = createRandomNino
         override val http = mock[WSHttp]
 
@@ -76,7 +76,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
     successDesResponseTest(" conflicted", CONFLICT)
 
     def failureDesErrorResponse(exceptionType: Exception, exceptionStringName: String): Unit = {
-      s"for a request that triggers $exceptionStringName, return a DESErrorResponse" in new DESConnector {
+      s"calling a request that triggers $exceptionStringName, return a DESErrorResponse" in new DESConnector {
         val nino = createRandomNino
         override val http = mock[WSHttp]
 
@@ -94,7 +94,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
     failureDesErrorResponse(new BadGatewayException(""), "the Bad Gateway Exception")
     failureDesErrorResponse(new Exception(""), "an uncaught exception")
 
-    "for a bad request, return the reason" in new DESConnector {
+    "making a call for a bad request, return the reason" in new DESConnector {
       val nino = createRandomNino
       override val http = mock[WSHttp]
 
@@ -108,7 +108,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
       result shouldBe InvalidDesRequest("etmp reason")
     }
 
-    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new DESConnector {
+    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new DESConnector {
       val nino = createRandomNino
       override val http = mock[WSHttp]
 
