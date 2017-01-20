@@ -60,12 +60,13 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
 
   implicit val httpRds = new HttpReads[HttpResponse] {
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
+  }
 
   def subscribe(): Future[HttpResponse] = ???
 
   def register(): Future[HttpResponse] = ???
 
-  def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+   def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl = s"$serviceUrl$baseUrl$nino$obtainBpUrl"
     val desHeaders = hc.copy(authorization = Some(Authorization(s"Bearer $token"))).withExtraHeaders("Environment" -> environment)
     val jsonNino = Json.toJson(nino)
@@ -82,7 +83,7 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
             SuccessDesResponse(r.json.as[JsObject])
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
-            SuccessDesResponse(r.json.as[JsObject])
+            InvalidDesRequest(message)
         }
     } recover {
       case ex: NotFoundException =>
@@ -107,6 +108,6 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
     private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
       http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
 
-  }
+
 
 }
