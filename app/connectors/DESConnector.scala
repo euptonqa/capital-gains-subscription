@@ -17,14 +17,95 @@
 package connectors
 
 import com.google.inject.{Inject, Singleton}
-import uk.gov.hmrc.play.http.HttpResponse
+import config.WSHttp
+import models.SubscriptionRequest
+import play.api.Logger
+import play.api.libs.json.{JsObject, Json, Writes}
+import uk.gov.hmrc.play.http._
+import play.api.http.Status._
+import uk.gov.hmrc.play.http.logging.Authorization
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-@Singleton
-class DESConnector @Inject()() {
+sealed trait DesResponse
+case class SuccessDesResponse(response: JsObject) extends DesResponse
+case object NotFoundDesResponse extends DesResponse
+case object DesErrorResponse extends DesResponse
+case class InvalidDesRequest(message: String) extends DesResponse
 
-  def subscribe(): Future[HttpResponse] = ???
+
+@Singleton
+class DESConnector @Inject()() extends HttpErrorFunctions {
+
+  val serviceUrl = "test"
+  val environment = "test"
+  val token = "des"
+
+  val http: HttpGet with HttpPost with HttpPut = WSHttp
+
+
+  private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
+    response.status match {
+      case BAD_REQUEST => response
+      case NOT_FOUND => throw new NotFoundException("ETMP returned a Not Found status")
+      case CONFLICT => response
+      case INTERNAL_SERVER_ERROR => throw new InternalServerException("ETMP returned an internal server error")
+      case BAD_GATEWAY => throw new BadGatewayException("ETMP returned an upstream error")
+      case _ => handleResponse(http, url)(response)
+    }
+  }
+
+  implicit val httpRds = new HttpReads[HttpResponse] {
+    def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
+  }
+
+  private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
+    headerCarrier.
+      withExtraHeaders("Environment" -> environment).
+      copy(authorization = Some(Authorization(s"Bearer $token")))
+  }
+
+  @inline
+  private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
+    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
+
+  def subscribe(safeId: String, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+    val requestUrl: String = s"$serviceUrl/???/$safeId/subscription"
+    val response = cPOST(requestUrl, Json.toJson(subscribeRequest))
+
+    val ackReq = subscribeRequest.acknowledgementReference
+    response map { r =>
+      r.status match {
+        case OK =>
+          Logger.info(s"Successful DES submission for $ackReq")
+          SuccessDesResponse(r.json.as[JsObject])
+        case ACCEPTED =>
+          Logger.info(s"Accepted DES submission for $ackReq")
+          SuccessDesResponse(r.json.as[JsObject])
+        case CONFLICT =>
+          Logger.warn(s"Duplicate submission for $ackReq has been reported")
+          SuccessDesResponse(r.json.as[JsObject])
+        case BAD_REQUEST =>
+          val message = (r.json \ "reason").as[String]
+          Logger.warn(s"Error with the request $message")
+          InvalidDesRequest(message)
+      }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn(s"Not found for $ackReq")
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn(s"Internal server error for $ackReq")
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn(s"Bad gateway status for $ackReq")
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} for $ackReq")
+        DesErrorResponse
+    }
+  }
 
   def register(): Future[HttpResponse] = ???
 }
