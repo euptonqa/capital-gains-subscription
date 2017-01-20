@@ -18,7 +18,7 @@ package connectors
 
 import com.google.inject.{Inject, Singleton}
 import config.WSHttp
-import play.api.libs.json.{JsObject, JsValue, Json, Writes}
+import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.play.http.logging.Authorization
 import uk.gov.hmrc.play.http._
 import play.api.http.Status._
@@ -48,11 +48,11 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
     response.status match {
-      case 400 => response
-      case 404 => throw new NotFoundException("ETMP returned a Not Found status")
-      case 409 => response
-      case 500 => throw new InternalServerException("ETMP returned an internal server error")
-      case 502 => throw new BadGatewayException("ETMP returned an upstream error")
+      case BAD_REQUEST => response
+      case NOT_FOUND => throw new NotFoundException("ETMP returned a Not Found status")
+      case CONFLICT => response
+      case INTERNAL_SERVER_ERROR => throw new InternalServerException("ETMP returned an internal server error")
+      case BAD_GATEWAY => throw new BadGatewayException("ETMP returned an upstream error")
       case _ => handleResponse(http, url)(response)
     }
   }
