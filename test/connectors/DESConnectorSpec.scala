@@ -20,7 +20,7 @@ import java.util.UUID
 
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpResponse, InternalServerException, NotFoundException}
+import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -40,12 +40,6 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
 
 
   def createRandomNino: String = new Generator(new Random()).nextNino.nino.replaceFirst("MA", "AA")
-
-  //val mockWSHttp = mock[WSHttp]
-
-//  before {
-//    reset(mockWSHttp)
-//  }
 
   "Calling .subscribe" should {
 
@@ -142,6 +136,33 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
 
       result shouldBe DesErrorResponse
     }
+
+    "return a DesErrorResponse when a BadGatewayException occurs" in new DESConnector {
+      val nino = createRandomNino
+      override val http = mock[WSHttp]
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new BadGatewayException("")))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe DesErrorResponse
+    }
+
+    "return a DesErrorResponse when an uncaught exception occurs" in new DESConnector {
+      val nino = createRandomNino
+      override val http = mock[WSHttp]
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new Exception("")))
+
+      val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe DesErrorResponse
+    }
   }
 
+  }
 }
