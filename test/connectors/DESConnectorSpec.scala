@@ -52,50 +52,45 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
   "Calling .obtainBP" when {
 
     implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-    "for a successful BP request return success" in new DESConnector {
-      val nino = createRandomNino
 
-      override val http = mock[WSHttp]
+    def successDesResponseTest(requestType: String, httpResponseCode: Int): Unit = {
+      s"for a$requestType BP request return a SuccessDesResponse" in new DESConnector {
+        val nino = createRandomNino
+        override val http = mock[WSHttp]
 
+        when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+          ArgumentMatchers.any())(ArgumentMatchers.any(),
+          ArgumentMatchers.any(), ArgumentMatchers.any())).
+          thenReturn(Future.successful(HttpResponse(httpResponseCode, responseJson = Some(Json.obj(nino -> "1234567")))))
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(200, responseJson = Some(Json.obj(nino -> "1234567")))))
+        val result = await(this.obtainBp(nino)(hc, global))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe SuccessDesResponse(Json.obj(nino -> "1234567"))
+        result shouldBe SuccessDesResponse(Json.obj(nino -> "1234567"))
+      }
     }
 
-    "for an accepted BP request, return success" in new DESConnector {
-      val nino = createRandomNino
+    successDesResponseTest(" successful", 200)
+    successDesResponseTest("n accepted", 202)
+    successDesResponseTest(" conflicted", 409)
 
-      override val http = mock[WSHttp]
+    def failureDesErrorResponse(exceptionType: Exception, exceptionStringName: String): Unit = {
+      s"for a request that triggers $exceptionStringName, return a DESErrorResponse" in new DESConnector {
+        val nino = createRandomNino
+        override val http = mock[WSHttp]
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(202, responseJson = Some(Json.obj(nino -> "1234567")))))
+        when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+          (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+          thenReturn(Future.failed(exceptionType))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
+        lazy val result = await(this.obtainBp(nino)(hc, global))
 
-      result shouldBe SuccessDesResponse(Json.obj(nino -> "1234567"))
+        result shouldBe DesErrorResponse
+      }
     }
 
-    "for a conflicted request, return success" in new DESConnector {
-      val nino = createRandomNino
-      override val http = mock[WSHttp]
-
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(202, responseJson = Some(Json.obj(nino -> "1234567")))))
-
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe SuccessDesResponse(Json.obj(nino -> "1234567"))
-    }
+    failureDesErrorResponse(new InternalServerException(""), "the Internal Server Exception")
+    failureDesErrorResponse(new BadGatewayException(""), "the Bad Gateway Exception")
+    failureDesErrorResponse(new Exception(""), "an uncaught exception")
 
     "for an invalid request, return the reason" in new DESConnector {
       val nino = createRandomNino
@@ -122,45 +117,6 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
       lazy val result = await(this.obtainBp(nino)(hc, global))
 
       result shouldBe NotFoundDesResponse
-    }
-
-    "for a request that triggers an InternalServerException return a DES errorResponse" in new DESConnector {
-      val nino = createRandomNino
-      override val http = mock[WSHttp]
-
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new InternalServerException("")))
-
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe DesErrorResponse
-    }
-
-    "return a DesErrorResponse when a BadGatewayException occurs" in new DESConnector {
-      val nino = createRandomNino
-      override val http = mock[WSHttp]
-
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new BadGatewayException("")))
-
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe DesErrorResponse
-    }
-
-    "return a DesErrorResponse when an uncaught exception occurs" in new DESConnector {
-      val nino = createRandomNino
-      override val http = mock[WSHttp]
-
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new Exception("")))
-
-      val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe DesErrorResponse
     }
   }
 
