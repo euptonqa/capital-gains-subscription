@@ -102,7 +102,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig) extends Htt
     }
   }
 
-  private[connectors] def recoverRequest(putUrl: String, ex: Throwable): TaxEnrolmentsResponse =
+  private[connectors] def recoverRequest(putUrl: String, ex: Throwable): TaxEnrolmentsResponse = {
     ex match {
       case _: InternalServerException =>
         Logger.warn(s"Tax Enrolments reported an internal server error status to Url $putUrl")
@@ -114,4 +114,5 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig) extends Htt
         Logger.warn(s"Tax Enrolments reported a ${ex.toString}")
         TaxEnrolmentsErrorResponse
     }
+  }
 }

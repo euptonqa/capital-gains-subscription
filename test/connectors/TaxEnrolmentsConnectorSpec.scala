@@ -17,7 +17,6 @@
 package connectors
 
 import java.util.UUID
-
 import config.ApplicationConfig
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -25,7 +24,6 @@ import uk.gov.hmrc.play.http._
 import org.scalatest.BeforeAndAfter
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import org.scalatest.mock.MockitoSugar
-import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.logging.SessionId
