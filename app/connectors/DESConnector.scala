@@ -24,8 +24,8 @@ import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.play.http._
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.logging.Authorization
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 sealed trait DesResponse
@@ -38,9 +38,15 @@ case class InvalidDesRequest(message: String) extends DesResponse
 @Singleton
 class DESConnector @Inject()() extends HttpErrorFunctions {
 
-  val serviceUrl = "test"
-  val environment = "test"
+  val serviceUrl = "http://google.com"
+  val environment = "???"
   val token = "des"
+  val baseUrl = "/capital-gains-subscription/"
+  val obtainBpUrl = "/obtainBp"
+
+  val urlHeaderEnvironment = "??? see srcs, found in config"
+  val urlHeaderAuthorization = "??? same as above"
+
 
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
@@ -56,19 +62,11 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
     }
   }
 
+
   implicit val httpRds = new HttpReads[HttpResponse] {
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
   }
 
-  private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
-    headerCarrier.
-      withExtraHeaders("Environment" -> environment).
-      copy(authorization = Some(Authorization(s"Bearer $token")))
-  }
-
-  @inline
-  private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
-    http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
 
   def subscribe(safeId: String, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
     val requestUrl: String = s"$serviceUrl/???/$safeId/subscription"
@@ -108,4 +106,54 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
   }
 
   def register(): Future[HttpResponse] = ???
+
+  def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl = s"$serviceUrl$baseUrl$nino$obtainBpUrl"
+    val jsonNino = Json.toJson(nino)
+    val response = cPOST(requestUrl, jsonNino)
+
+    response map {
+      r =>
+        r.status match {
+          case OK =>
+            Logger.info("Successful DES request for BP number")
+            SuccessDesResponse(r.json.as[JsObject])
+          case ACCEPTED =>
+            Logger.info("Accepted DES request for BP number")
+            SuccessDesResponse(r.json.as[JsObject])
+          case CONFLICT =>
+            Logger.info("Conflicted DES request for BP number - BP Number already in existence")
+            SuccessDesResponse(r.json.as[JsObject])
+          case BAD_REQUEST =>
+            val message = (r.json \ "reason").as[String]
+            Logger.warn(s"Error with the request $message")
+            InvalidDesRequest(message)
+        }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn("Not found exception for DES request for BP number")
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn("Internal server error for DES request for BP number")
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn("Bad gateway status for DES request for BP number")
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
+        DesErrorResponse
+    }
+
+  }
+
+    private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
+      headerCarrier.
+        withExtraHeaders("Environment" -> urlHeaderEnvironment).
+        copy(authorization = Some(Authorization(urlHeaderAuthorization)))
+    }
+
+    @inline
+    private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
+      http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
+
 }

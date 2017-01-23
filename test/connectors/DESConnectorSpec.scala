@@ -17,7 +17,9 @@
 package connectors
 
 import java.util.UUID
-
+import uk.gov.hmrc.play.http.ws.WSHttp
+import scala.concurrent.ExecutionContext.global
+import common.Utilities.createRandomNino
 import helpers.TestHelper._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -32,6 +34,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.play.http.logging.SessionId
+
 
 import scala.concurrent.Future
 
@@ -69,7 +72,6 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       }
     }
   }
-
 
   "Calling .subscribe" should {
 
@@ -231,6 +233,119 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
   "Calling .register" should {
 
+  }
+
+  "Calling .obtainBP" when {
+
+    trait Setup extends DESConnector {
+      val nino = createRandomNino
+
+      override val serviceUrl = "http://google.com"
+      override val environment = "???"
+      override val token = "DES"
+      override val baseUrl = "/capital-gains-subscription/"
+      override val obtainBpUrl = "/obtainBp"
+
+      override val urlHeaderEnvironment = "??? see srcs, found in config"
+      override val urlHeaderAuthorization = "??? same as above"
+      override val http = mock[WSHttp]
+    }
+
+    implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+    "for an accepted BP request, return success" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+    }
+
+    "for a successful BP request return success" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+    }
+
+    "for a conflicted request, return success" in new Setup {
+
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+    }
+
+
+    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new NotFoundException("")))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe NotFoundDesResponse
+    }
+
+    "for a request that triggers an InternalServerException return a DES errorResponse" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new InternalServerException("")))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe DesErrorResponse
+    }
+
+    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new BadGatewayException("")))
+
+      lazy val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe DesErrorResponse
+    }
+
+      "making a call for a bad request, return the reason" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
+
+      val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe InvalidDesRequest("etmp reason")
+    }
+
+    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new NotFoundException("")))
+
+      val result = await(this.obtainBp(nino)(hc, global))
+
+      result shouldBe NotFoundDesResponse
+    }
   }
 
 }
