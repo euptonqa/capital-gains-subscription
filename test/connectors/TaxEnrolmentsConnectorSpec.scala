@@ -18,6 +18,7 @@ package connectors
 
 import java.util.UUID
 
+import config.{AppConfig, ApplicationConfig}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import uk.gov.hmrc.play.http._
@@ -35,14 +36,10 @@ import scala.concurrent.Future
 class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFakeApplication with BeforeAndAfter {
 
   val mockWSHttp = mock[WSHttp]
+  val mockAppConfig = mock[ApplicationConfig]
 
-  object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector {
-    override val serviceUrl: String = "localhost"
-    override val issuerUri: String = "issuer"
-    override val subscriberUri: String = "subscriber"
+  object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector(mockAppConfig) {
     override val http: HttpPut with HttpGet with HttpPost = mockWSHttp
-    override val urlHeaderEnvironment = "test"
-    override val urlHeaderAuthorization = "testAuth"
   }
 
   implicit val hc = mock[HeaderCarrier]

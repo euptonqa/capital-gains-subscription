@@ -17,10 +17,12 @@
 package connectors
 
 import com.google.inject.{Inject, Singleton}
-import config.WSHttp
+import common.Keys.TaxEnrolmentsKeys
+import config.{ApplicationConfig, WSHttp}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
+import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 
@@ -33,12 +35,12 @@ case object TaxEnrolmentsErrorResponse extends TaxEnrolmentsResponse
 case class InvalidTaxEnrolmentsRequest(message: String) extends TaxEnrolmentsResponse
 
 @Singleton
-class TaxEnrolmentsConnector @Inject()() extends HttpErrorFunctions {
+class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunctions with ServicesConfig {
 
-  val serviceUrl: String = "tax-enrolments/subscriptions"
-  val issuerUri: String = "issuer"
-  val subscriberUri: String = "subscriber"
+  lazy val serviceUrl: String = appConfig.taxEnrolmentsUrl
   val http: HttpPut with HttpGet with HttpPost = WSHttp
+
+  //TODO: move these into servicesConfig when received confirmation of content
   val urlHeaderEnvironment: String = ""
   val urlHeaderAuthorization: String = ""
 
@@ -65,7 +67,7 @@ class TaxEnrolmentsConnector @Inject()() extends HttpErrorFunctions {
     http.PUT[I, O](url, body)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
 
   def getIssuerResponse(subscriptionId: String, body: JsValue)(implicit hc: HeaderCarrier): Future[TaxEnrolmentsResponse] = {
-    val putUrl = s"""$serviceUrl/$subscriptionId/$issuerUri"""
+    val putUrl = s"""$serviceUrl/$subscriptionId/${TaxEnrolmentsKeys.issuer}"""
     val response = cPUT(putUrl, body)
     response map { r =>
       r.status match {
@@ -83,7 +85,7 @@ class TaxEnrolmentsConnector @Inject()() extends HttpErrorFunctions {
   }
 
   def getSubscriberResponse(subscriptionId: String, body: JsValue)(implicit headerCarrier: HeaderCarrier): Future[TaxEnrolmentsResponse] = {
-    val putUrl = s"""$serviceUrl/$subscriptionId/$subscriberUri"""
+    val putUrl = s"""$serviceUrl/$subscriptionId/${TaxEnrolmentsKeys.subscriber}"""
     val response = cPUT(putUrl, body)
     response map { r =>
       r.status match {
