@@ -78,15 +78,7 @@ class TaxEnrolmentsConnector @Inject()() extends HttpErrorFunctions {
           InvalidTaxEnrolmentsRequest(message)
       }
     } recover {
-      case ex: InternalServerException =>
-        Logger.warn(s"Tax Enrolments reported an internal server error status to Url $putUrl")
-        TaxEnrolmentsErrorResponse
-      case ex: BadGatewayException =>
-        Logger.warn(s"Tax Enrolments reported a bad gateway status to Url $putUrl")
-        TaxEnrolmentsErrorResponse
-      case ex: Exception =>
-        Logger.warn(s"Tax Enrolments reported a ${ex.toString}")
-        TaxEnrolmentsErrorResponse
+      case ex => recoverRequest(putUrl, ex)
     }
   }
 
@@ -104,15 +96,20 @@ class TaxEnrolmentsConnector @Inject()() extends HttpErrorFunctions {
           InvalidTaxEnrolmentsRequest(message)
       }
     } recover {
-      case ex: InternalServerException =>
+      case ex => recoverRequest(putUrl, ex)
+    }
+  }
+
+  private[connectors] def recoverRequest(putUrl: String, ex: Throwable): TaxEnrolmentsResponse =
+    ex match {
+      case _: InternalServerException =>
         Logger.warn(s"Tax Enrolments reported an internal server error status to Url $putUrl")
         TaxEnrolmentsErrorResponse
-      case ex: BadGatewayException =>
+      case _: BadGatewayException =>
         Logger.warn(s"Tax Enrolments reported a bad gateway status to Url $putUrl")
         TaxEnrolmentsErrorResponse
-      case ex: Exception =>
+      case _: Exception =>
         Logger.warn(s"Tax Enrolments reported a ${ex.toString}")
         TaxEnrolmentsErrorResponse
     }
-  }
 }

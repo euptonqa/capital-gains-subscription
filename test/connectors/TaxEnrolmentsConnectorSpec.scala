@@ -24,7 +24,8 @@ import uk.gov.hmrc.play.http._
 import org.scalatest.BeforeAndAfter
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import org.scalatest.mock.MockitoSugar
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.Logger
+import play.api.libs.json.{JsValue, Json}
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.http.ws.WSHttp
@@ -35,6 +36,7 @@ import scala.concurrent.Future
 class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFakeApplication with BeforeAndAfter {
 
   val mockWSHttp = mock[WSHttp]
+  val mockLogger = mock[Logger]
 
   object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector {
     override val serviceUrl: String = "localhost"
@@ -74,6 +76,36 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
     "return a bad gateway exception when it reads a 502 status code from the http response" in {
       intercept[BadGatewayException]{
         TestTaxEnrolmentsConnector.httpRds.read("http://", "testUrl", HttpResponse(BAD_GATEWAY))
+      }
+    }
+  }
+
+  "TaxEnrolmentsConnector .recoverRequest" should {
+
+    "with an Exception of type InternalServerException" should {
+
+      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new InternalServerException(""))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+
+    "with an Exception of type BadGatewayException" should {
+
+      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new BadGatewayException(""))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+
+    "with an unhandled Exception" should {
+
+      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new Exception(""))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
       }
     }
   }
