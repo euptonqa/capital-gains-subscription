@@ -39,13 +39,12 @@ class AuthConnector @Inject()() extends ServicesConfig {
     http.GET[HttpResponse](getUrl).map {
       response =>
         response.status match {
-          case OK => {
+          case OK =>
             val confidenceLevel = (response.json \ "confidenceLevel").as[ConfidenceLevel]
             val affinityGroup = (response.json \ "affinityGroup").as[String]
             val credentialStrength = (response.json \ "credentialStrength").as[String]
 
             Some(AuthorisationDataModel(affinityGroup, confidenceLevel, credentialStrength))
-          }
           case _ => None
         }
     }

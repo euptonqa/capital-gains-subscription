@@ -18,12 +18,14 @@ package checks
 
 import models.AuthorisationDataModel
 
+import scala.concurrent.Future
+
 object ResidentIndividualCheck {
 
-  def check(authorisationDataModel: Option[AuthorisationDataModel]): Boolean = {
+  def check(authorisationDataModel: Option[AuthorisationDataModel]): Future[Boolean] = {
     authorisationDataModel match {
-      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => confidence.level >= 200
-      case _ => false
+      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => Future.successful(confidence.level >= 200)
+      case _ => Future.successful(false)
     }
   }
 }

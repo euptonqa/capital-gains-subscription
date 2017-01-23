@@ -29,34 +29,34 @@ class ResidentIndividualCheckSpec extends UnitSpec {
       val authorisationDataModel = AuthorisationDataModel(AffinityConstants.individual, ConfidenceLevel.L200, CredentialStrengthConstants.strong)
       val result = ResidentIndividualCheck.check(Some(authorisationDataModel))
 
-      result shouldBe true
+      await(result) shouldBe true
     }
 
     "return a false with a confidence level below 200" in {
       val authorisationDataModel = AuthorisationDataModel(AffinityConstants.individual, ConfidenceLevel.L50, CredentialStrengthConstants.strong)
       val result = ResidentIndividualCheck.check(Some(authorisationDataModel))
 
-      result shouldBe false
+      await(result) shouldBe false
     }
 
     "return a false with an non-individual" in {
       val authorisationDataModel = AuthorisationDataModel(AffinityConstants.organisation, ConfidenceLevel.L200, CredentialStrengthConstants.strong)
       val result = ResidentIndividualCheck.check(Some(authorisationDataModel))
 
-      result shouldBe false
+      await(result) shouldBe false
     }
 
     "return a false with weak credentials" in {
       val authorisationDataModel = AuthorisationDataModel(AffinityConstants.individual, ConfidenceLevel.L200, CredentialStrengthConstants.weak)
       val result = ResidentIndividualCheck.check(Some(authorisationDataModel))
 
-      result shouldBe false
+      await(result) shouldBe false
     }
 
     "return a false with no authority" in {
       val result = ResidentIndividualCheck.check(None)
 
-      result shouldBe false
+      await(result) shouldBe false
     }
   }
 }

@@ -16,21 +16,28 @@
 
 package auth
 
+import checks.ResidentIndividualCheck
 import com.google.inject.{Inject, Singleton}
 import play.api.mvc.Result
 import services.AuthService
+import uk.gov.hmrc.play.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
 class AuthorisedActions @Inject()(authService: AuthService) {
 
-  def residentIndividualAuthCheck(): Boolean = true
-
   private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
     f(authCheck)
   }
 
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
+  def authorisedResidentIndividualAction(action: Boolean => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    for {
+      authority <- authService.getAuthority()
+      authorised <- ResidentIndividualCheck.check(authority)
+      result <- createAuthorisedAction(action, authorised)
+    } yield result
+  }
 
 }
