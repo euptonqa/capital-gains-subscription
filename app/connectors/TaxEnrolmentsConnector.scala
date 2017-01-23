@@ -37,7 +37,8 @@ case class InvalidTaxEnrolmentsRequest(message: String) extends TaxEnrolmentsRes
 @Singleton
 class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunctions with ServicesConfig {
 
-  lazy val serviceUrl: String = appConfig.taxEnrolmentsUrl
+  lazy val serviceUrl: String = appConfig.baseUrl("tax-enrolments")
+  lazy val serviceContext: String = appConfig.taxEnrolmentsContextUrl
   val http: HttpPut with HttpGet with HttpPost = WSHttp
 
   //TODO: move these into servicesConfig when received confirmation of content
@@ -67,7 +68,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig) extends Htt
     http.PUT[I, O](url, body)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
 
   def getIssuerResponse(subscriptionId: String, body: JsValue)(implicit hc: HeaderCarrier): Future[TaxEnrolmentsResponse] = {
-    val putUrl = s"""$serviceUrl/$subscriptionId/${TaxEnrolmentsKeys.issuer}"""
+    val putUrl = s"""$serviceUrl$serviceContext/subscriptions/$subscriptionId/${TaxEnrolmentsKeys.issuer}"""
     val response = cPUT(putUrl, body)
     response map { r =>
       r.status match {
@@ -85,7 +86,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig) extends Htt
   }
 
   def getSubscriberResponse(subscriptionId: String, body: JsValue)(implicit headerCarrier: HeaderCarrier): Future[TaxEnrolmentsResponse] = {
-    val putUrl = s"""$serviceUrl/$subscriptionId/${TaxEnrolmentsKeys.subscriber}"""
+    val putUrl = s"""$serviceUrl$serviceContext/subscriptions/$subscriptionId/${TaxEnrolmentsKeys.subscriber}"""
     val response = cPUT(putUrl, body)
     response map { r =>
       r.status match {
