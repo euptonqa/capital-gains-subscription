@@ -37,7 +37,7 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
 
   val serviceUrl = "http://google.com"
   val environment = "???"
-  val token = "blah"
+  val token = "DES"
   val baseUrl = "/capital-gains-subscription/"
   val obtainBpUrl = "/obtainBp"
 
