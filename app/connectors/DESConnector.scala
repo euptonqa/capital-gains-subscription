@@ -18,13 +18,15 @@ package connectors
 
 import com.google.inject.{Inject, Singleton}
 import config.WSHttp
+import models.SubscriptionRequest
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json, Writes}
-import uk.gov.hmrc.play.http.logging.Authorization
 import uk.gov.hmrc.play.http._
 import play.api.http.Status._
-
-import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.play.http.logging.Authorization
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 sealed trait DesResponse
 case class SuccessDesResponse(response: JsObject) extends DesResponse
@@ -32,17 +34,19 @@ case object NotFoundDesResponse extends DesResponse
 case object DesErrorResponse extends DesResponse
 case class InvalidDesRequest(message: String) extends DesResponse
 
+
 @Singleton
 class DESConnector @Inject()() extends HttpErrorFunctions {
 
   val serviceUrl = "http://google.com"
   val environment = "???"
-  val token = "DES"
+  val token = "des"
   val baseUrl = "/capital-gains-subscription/"
   val obtainBpUrl = "/obtainBp"
 
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
+
 
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
@@ -63,7 +67,43 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
     def read(http: String, url: String, res: HttpResponse) = customDESRead(http, url, res)
   }
 
-  def subscribe(): Future[HttpResponse] = ???
+
+  def subscribe(safeId: String, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+    val requestUrl: String = s"$serviceUrl/???/$safeId/subscription"
+    val response = cPOST(requestUrl, Json.toJson(subscribeRequest))
+
+    val ackReq = subscribeRequest.acknowledgementReference
+    response map { r =>
+      r.status match {
+        case OK =>
+          Logger.info(s"Successful DES submission for $ackReq")
+          SuccessDesResponse(r.json.as[JsObject])
+        case CONFLICT =>
+          Logger.warn(s"Duplicate submission for $ackReq has been reported")
+          SuccessDesResponse(r.json.as[JsObject])
+        case ACCEPTED =>
+          Logger.info(s"Accepted DES submission for $ackReq")
+          SuccessDesResponse(r.json.as[JsObject])
+        case BAD_REQUEST =>
+          val message = (r.json \ "reason").as[String]
+          Logger.warn(s"Error with the request $message")
+          InvalidDesRequest(message)
+      }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn(s"Not found for $ackReq")
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn(s"Internal server error for $ackReq")
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn(s"Bad gateway status for $ackReq")
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} for $ackReq")
+        DesErrorResponse
+    }
+  }
 
   def register(): Future[HttpResponse] = ???
 
