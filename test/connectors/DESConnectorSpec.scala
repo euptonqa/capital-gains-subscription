@@ -66,7 +66,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(202, responseJson = Some(Json.obj("bp" -> "1234567")))))
+        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
       lazy val result = await(this.obtainBp(nino)(hc, global))
 
@@ -78,7 +78,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(200, responseJson = Some(Json.obj("bp" -> "1234567")))))
+        thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
       lazy val result = await(this.obtainBp(nino)(hc, global))
 
@@ -91,7 +91,7 @@ class DESConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfter wi
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(202, responseJson = Some(Json.obj("bp" -> "1234567")))))
+        thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
       lazy val result = await(this.obtainBp(nino)(hc, global))
 
