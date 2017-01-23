@@ -85,6 +85,16 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
     }
 
+    "return success with an accepted response" in {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
+
+      val result = await(TestDESConnector.subscribe(dummyValidSafeID, dummySubscriptionRequestValid))
+
+      result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
+    }
+
     "return success with a conflicted submission" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).

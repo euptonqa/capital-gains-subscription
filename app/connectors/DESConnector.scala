@@ -80,11 +80,11 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
         case OK =>
           Logger.info(s"Successful DES submission for $ackReq")
           SuccessDesResponse(r.json.as[JsObject])
-        case ACCEPTED =>
-          Logger.info(s"Accepted DES submission for $ackReq")
-          SuccessDesResponse(r.json.as[JsObject])
         case CONFLICT =>
           Logger.warn(s"Duplicate submission for $ackReq has been reported")
+          SuccessDesResponse(r.json.as[JsObject])
+        case ACCEPTED =>
+          Logger.info(s"Accepted DES submission for $ackReq")
           SuccessDesResponse(r.json.as[JsObject])
         case BAD_REQUEST =>
           val message = (r.json \ "reason").as[String]
