@@ -21,6 +21,7 @@ import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import services.AuthService
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
@@ -29,7 +30,9 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
   def setupController(response: String, errors: Boolean, authorised: Boolean): SubscriptionController = {
 
-    val actions = new AuthorisedActions {
+    val mockService = mock[AuthService]
+
+    val actions = new AuthorisedActions(mockService) {
       override def residentIndividualAuthCheck() = authorised
     }
 

@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package auth
+package services
 
 import com.google.inject.{Inject, Singleton}
-import play.api.mvc.Result
-import services.AuthService
+import connectors.AuthConnector
+import models.AuthorisationDataModel
+import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 
 @Singleton
-class AuthorisedActions @Inject()(authService: AuthService) {
+class AuthService @Inject()(authConnector: AuthConnector) {
 
-  def residentIndividualAuthCheck(): Boolean = true
-
-  private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
-    f(authCheck)
+  def getAuthority()(implicit hc: HeaderCarrier): Future[Option[AuthorisationDataModel]] = {
+    authConnector.getAuthResponse()
   }
-
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
 
 }

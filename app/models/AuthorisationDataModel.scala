@@ -14,23 +14,10 @@
  * limitations under the License.
  */
 
-package auth
+package models
 
-import com.google.inject.{Inject, Singleton}
-import play.api.mvc.Result
-import services.AuthService
+import uk.gov.hmrc.play.auth.microservice.connectors.ConfidenceLevel
 
-import scala.concurrent.Future
-
-@Singleton
-class AuthorisedActions @Inject()(authService: AuthService) {
-
-  def residentIndividualAuthCheck(): Boolean = true
-
-  private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
-    f(authCheck)
-  }
-
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
-
-}
+case class AuthorisationDataModel(affinityGroup: String,
+                                  confidenceLevel: ConfidenceLevel,
+                                  credentialStrength: String)

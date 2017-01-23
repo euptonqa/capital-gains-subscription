@@ -14,23 +14,11 @@
  * limitations under the License.
  */
 
-package auth
+package common
 
-import com.google.inject.{Inject, Singleton}
-import play.api.mvc.Result
-import services.AuthService
+object AffinityConstants {
 
-import scala.concurrent.Future
-
-@Singleton
-class AuthorisedActions @Inject()(authService: AuthService) {
-
-  def residentIndividualAuthCheck(): Boolean = true
-
-  private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
-    f(authCheck)
-  }
-
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
-
+  val individual = "Individual"
+  val organisation = "Organisation"
+  val agent = "Agent"
 }

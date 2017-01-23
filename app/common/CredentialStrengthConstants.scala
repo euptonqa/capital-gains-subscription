@@ -14,23 +14,10 @@
  * limitations under the License.
  */
 
-package auth
+package common
 
-import com.google.inject.{Inject, Singleton}
-import play.api.mvc.Result
-import services.AuthService
+object CredentialStrengthConstants {
 
-import scala.concurrent.Future
-
-@Singleton
-class AuthorisedActions @Inject()(authService: AuthService) {
-
-  def residentIndividualAuthCheck(): Boolean = true
-
-  private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
-    f(authCheck)
-  }
-
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
-
+  val strong = "strong"
+  val weak = "weak"
 }

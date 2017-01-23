@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package auth
+package checks
 
-import com.google.inject.{Inject, Singleton}
-import play.api.mvc.Result
-import services.AuthService
+import models.AuthorisationDataModel
 
-import scala.concurrent.Future
+object ResidentIndividualCheck {
 
-@Singleton
-class AuthorisedActions @Inject()(authService: AuthService) {
-
-  def residentIndividualAuthCheck(): Boolean = true
-
-  private def createAuthorisedAction(f: => Boolean => Future[Result], authCheck: Boolean): Future[Result] = {
-    f(authCheck)
+  def check(authorisationDataModel: Option[AuthorisationDataModel]): Boolean = {
+    authorisationDataModel match {
+      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => confidence.level >= 200
+      case _ => false
+    }
   }
-
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result]): Future[Result] = createAuthorisedAction(action, residentIndividualAuthCheck())
-
 }
