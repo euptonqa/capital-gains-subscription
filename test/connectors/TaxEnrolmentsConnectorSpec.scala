@@ -24,7 +24,6 @@ import uk.gov.hmrc.play.http._
 import org.scalatest.BeforeAndAfter
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import org.scalatest.mock.MockitoSugar
-import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.logging.SessionId
@@ -36,7 +35,6 @@ import scala.concurrent.Future
 class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFakeApplication with BeforeAndAfter {
 
   val mockWSHttp = mock[WSHttp]
-  val mockLogger = mock[Logger]
 
   object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector {
     override val serviceUrl: String = "localhost"
