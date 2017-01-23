@@ -18,7 +18,7 @@ package connectors
 
 import java.util.UUID
 
-import config.{AppConfig, ApplicationConfig}
+import config.ApplicationConfig
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import uk.gov.hmrc.play.http._
