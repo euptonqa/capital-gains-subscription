@@ -18,6 +18,7 @@ package connectors
 
 import com.google.inject.{Inject, Singleton}
 import config.WSHttp
+import play.api.Logger
 import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.play.http.logging.Authorization
 import uk.gov.hmrc.play.http._
@@ -76,23 +77,31 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
       r =>
         r.status match {
           case OK =>
+            Logger.info("Successful DES request for BP number")
             SuccessDesResponse(r.json.as[JsObject])
           case ACCEPTED =>
+            Logger.info("Accepted DES request for BP number")
             SuccessDesResponse(r.json.as[JsObject])
           case CONFLICT =>
+            Logger.info("Conflicted DES request for BP number - BP Number already in existence")
             SuccessDesResponse(r.json.as[JsObject])
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
+            Logger.warn(s"Error with the request $message")
             InvalidDesRequest(message)
         }
     } recover {
       case ex: NotFoundException =>
+        Logger.warn("Not found exception for DES request for BP number")
         NotFoundDesResponse
       case ex: InternalServerException =>
+        Logger.warn("Internal server error for DES request for BP number")
         DesErrorResponse
       case ex: BadGatewayException =>
+        Logger.warn("Bad gateway status for DES request for BP number")
         DesErrorResponse
       case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
         DesErrorResponse
     }
 

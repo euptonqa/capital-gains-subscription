@@ -24,7 +24,7 @@ import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.http.ws.WSHttp
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
-import org.mockito.{ArgumentMatchers}
+import org.mockito.ArgumentMatchers
 import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.domain.Generator
 
