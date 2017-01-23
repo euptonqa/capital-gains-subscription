@@ -18,6 +18,7 @@ package connectors
 
 import java.util.UUID
 
+import config.ApplicationConfig
 import helpers.TestHelper._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -37,6 +38,8 @@ import scala.concurrent.Future
 
 class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter{
 
+  val mockAppConfig = mock[ApplicationConfig]
+
   class MockHttp extends WSGet with WSPost with WSPut with HttpAuditing {
     override val hooks = Seq(AuditingHook)
     override def appName = "test"
@@ -45,8 +48,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
   val mockWSHttp = mock[MockHttp]
 
-  object TestDESConnector extends DESConnector {
-    override val serviceUrl = "test"
+  object TestDESConnector extends DESConnector(mockAppConfig) {
+    override lazy val serviceUrl = "test"
     override val environment = "test"
     override val token = "test"
     override val http = mockWSHttp

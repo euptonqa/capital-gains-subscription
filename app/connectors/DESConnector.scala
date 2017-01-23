@@ -17,7 +17,7 @@
 package connectors
 
 import com.google.inject.{Inject, Singleton}
-import config.WSHttp
+import config.{ApplicationConfig, WSHttp}
 import models.SubscriptionRequest
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json, Writes}
@@ -36,9 +36,10 @@ case class InvalidDesRequest(message: String) extends DesResponse
 
 
 @Singleton
-class DESConnector @Inject()() extends HttpErrorFunctions {
+class DESConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunctions {
 
-  val serviceUrl = "test"
+  lazy val serviceUrl: String = appConfig.baseUrl("des")
+  lazy val serviceContext: String = appConfig.desContextUrl
   val environment = "test"
   val token = "des"
 
@@ -71,7 +72,7 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
 
   def subscribe(safeId: String, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-    val requestUrl: String = s"$serviceUrl/???/$safeId/subscription"
+    val requestUrl: String = s"$serviceUrl$serviceContext/$safeId/subscription"
     val response = cPOST(requestUrl, Json.toJson(subscribeRequest))
 
     val ackReq = subscribeRequest.acknowledgementReference

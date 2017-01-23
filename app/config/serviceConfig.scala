@@ -26,7 +26,8 @@ trait AppConfig {
   val analyticsHost: String
   val reportAProblemPartialUrl: String
   val reportAProblemNonJSUrl: String
-  val taxEnrolmentsUrl: String
+  val taxEnrolmentsContextUrl: String
+  val desContextUrl: String
 }
 
 @Singleton
@@ -42,5 +43,6 @@ class ApplicationConfig @Inject()(configuration: Configuration) extends AppConfi
   override lazy val analyticsHost: String = loadConfig(s"google-analytics.host")
   override lazy val reportAProblemPartialUrl = s"$contactHost/contact/problem_reports_ajax?service=$contactFormServiceIdentifier"
   override lazy val reportAProblemNonJSUrl = s"$contactHost/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
-  override val taxEnrolmentsUrl: String = loadConfig("microservice.services.tax-enrolments.url")
+  override val taxEnrolmentsContextUrl: String = loadConfig("microservice.services.tax-enrolments.context")
+  override val desContextUrl: String = loadConfig("microservice.services.des.context")
 }
