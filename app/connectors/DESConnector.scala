@@ -67,9 +67,8 @@ class DESConnector @Inject()() extends HttpErrorFunctions {
 
   def register(): Future[HttpResponse] = ???
 
-   def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+  def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl = s"$serviceUrl$baseUrl$nino$obtainBpUrl"
-    val desHeaders = hc.copy(authorization = Some(Authorization(s"Bearer $token"))).withExtraHeaders("Environment" -> environment)
     val jsonNino = Json.toJson(nino)
     val response = cPOST(requestUrl, jsonNino)
 
