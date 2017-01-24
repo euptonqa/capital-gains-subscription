@@ -20,27 +20,30 @@ import auth.AuthorisedActions
 import com.google.inject.{Inject, Singleton}
 import models.ExceptionResponse
 import play.api.libs.json.Json
-import play.api.mvc.Action
+import play.api.mvc.{Action, AnyContent}
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Success, Try}
 
 @Singleton
 class SubscriptionController @Inject()(actions: AuthorisedActions) extends BaseController {
 
-  //TODO add authorisation check for backend
-
   //TODO replace stubbed method with injected service
   def subscribeUser(): Future[String] = Future.successful("CGT123456")
 
-  val subscribeResidentIndividual = Action.async { implicit request =>
+  def subscribeResidentIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
 
-    actions.authorisedResidentIndividualAction {
-      case true => subscribeUser().map {
-        case reference => Ok(Json.toJson(reference))
-      } recoverWith {
-        case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+    Try(Nino(nino)) match {
+      case Success(value) => actions.authorisedResidentIndividualAction {
+        case true => subscribeUser().map {
+          case reference => Ok(Json.toJson(reference))
+        } recoverWith {
+          case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+        }
+        case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
       }
       case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
     }

@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package models
+package common
 
-import play.api.libs.json.Json
+object CredentialStrengthConstants {
 
-case class ExceptionResponse (statusCode: Int, message: String)
-
-object ExceptionResponse {
-  implicit val formats = Json.format[ExceptionResponse]
+  val strong = "strong"
+  val weak = "weak"
 }

@@ -16,10 +16,8 @@
 
 package models
 
-import play.api.libs.json.Json
+import uk.gov.hmrc.play.auth.microservice.connectors.ConfidenceLevel
 
-case class ExceptionResponse (statusCode: Int, message: String)
-
-object ExceptionResponse {
-  implicit val formats = Json.format[ExceptionResponse]
-}
+case class AuthorisationDataModel(affinityGroup: String,
+                                  confidenceLevel: ConfidenceLevel,
+                                  credentialStrength: String)

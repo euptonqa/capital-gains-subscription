@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package models
+package checks
 
-import play.api.libs.json.Json
+import models.AuthorisationDataModel
 
-case class ExceptionResponse (statusCode: Int, message: String)
+import scala.concurrent.Future
 
-object ExceptionResponse {
-  implicit val formats = Json.format[ExceptionResponse]
+object ResidentIndividualCheck {
+
+  def check(authorisationDataModel: Option[AuthorisationDataModel]): Future[Boolean] = {
+    authorisationDataModel match {
+      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => Future.successful(confidence.level >= 200)
+      case _ => Future.successful(false)
+    }
+  }
 }

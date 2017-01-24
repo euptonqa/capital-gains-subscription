@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package models
+package common
 
-import play.api.libs.json.Json
+object AffinityConstants {
 
-case class ExceptionResponse (statusCode: Int, message: String)
-
-object ExceptionResponse {
-  implicit val formats = Json.format[ExceptionResponse]
+  val individual = "Individual"
+  val organisation = "Organisation"
+  val agent = "Agent"
 }

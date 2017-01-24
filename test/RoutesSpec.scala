@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package models
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-import play.api.libs.json.Json
+class RoutesSpec extends UnitSpec with WithFakeApplication {
 
-case class ExceptionResponse (statusCode: Int, message: String)
+  "The URL for the subscribeResidentIndividual Action" should {
+    "be equal to /capital-gains-subscription/subscribe/resident/individual" in {
+      val path = controllers.routes.SubscriptionController.subscribeResidentIndividual("AA123456A")
+      path.url shouldBe "/capital-gains-subscription/subscribe/resident/individual?nino=AA123456A"
+    }
+  }
 
-object ExceptionResponse {
-  implicit val formats = Json.format[ExceptionResponse]
 }

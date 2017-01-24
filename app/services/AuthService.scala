@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package models
+package services
 
-import play.api.libs.json.Json
+import com.google.inject.{Inject, Singleton}
+import connectors.AuthConnector
+import models.AuthorisationDataModel
+import uk.gov.hmrc.play.http.HeaderCarrier
 
-case class ExceptionResponse (statusCode: Int, message: String)
+import scala.concurrent.Future
 
-object ExceptionResponse {
-  implicit val formats = Json.format[ExceptionResponse]
+@Singleton
+class AuthService @Inject()(authConnector: AuthConnector) {
+
+  def getAuthority()(implicit hc: HeaderCarrier): Future[Option[AuthorisationDataModel]] = {
+    authConnector.getAuthResponse()
+  }
+
 }
