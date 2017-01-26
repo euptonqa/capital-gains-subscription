@@ -41,9 +41,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunc
   lazy val serviceUrl: String = appConfig.baseUrl("des")
   lazy val serviceContext: String = appConfig.desContextUrl
   val environment = "test"
-
   val token = "des"
-  val baseUrl = "/capital-gains-subscription/"
   val obtainBpUrl = "/obtainBp"
 
   val urlHeaderEnvironment = "??? see srcs, found in config"
@@ -110,7 +108,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunc
   def register(): Future[HttpResponse] = ???
 
   def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$baseUrl$nino$obtainBpUrl"
+    val requestUrl = s"$serviceUrl$serviceContext$nino$obtainBpUrl"
     val jsonNino = Json.toJson(nino)
     val response = cPOST(requestUrl, jsonNino)
 

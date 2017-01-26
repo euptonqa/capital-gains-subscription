@@ -17,8 +17,7 @@
 package connectors
 
 import java.util.UUID
-import uk.gov.hmrc.play.http.ws.WSHttp
-import scala.concurrent.ExecutionContext.global
+
 import common.Utilities.createRandomNino
 import config.ApplicationConfig
 import helpers.TestHelper._
@@ -27,19 +26,19 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.OneServerPerSuite
-import uk.gov.hmrc.play.audit.http.HttpAuditing
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.http.{Upstream4xxResponse, Upstream5xxResponse, _}
-import uk.gov.hmrc.play.http.ws.{WSGet, WSPost, WSPut}
-import uk.gov.hmrc.play.test.UnitSpec
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.play.audit.http.HttpAuditing
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.logging.SessionId
+import uk.gov.hmrc.play.http.ws.{WSGet, WSHttp, WSPost, WSPut}
+import uk.gov.hmrc.play.http.{Upstream4xxResponse, Upstream5xxResponse, _}
+import uk.gov.hmrc.play.test.UnitSpec
 
-
+import scala.concurrent.ExecutionContext.global
 import scala.concurrent.Future
 
-class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter{
+class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
   val mockAppConfig: ApplicationConfig = mock[ApplicationConfig]
 
@@ -70,7 +69,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
 
     "return a not found exception when it reads a NOT_FOUND status code from the http response" in {
-      intercept[NotFoundException]{
+      intercept[NotFoundException] {
         TestDESConnector.httpRds.read("http://", "testUrl", HttpResponse(NOT_FOUND))
       }
     }
@@ -190,7 +189,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "throw a NotFoundException" in {
       val response = HttpResponse(404)
-      val ex = intercept[NotFoundException]{
+      val ex = intercept[NotFoundException] {
         await(TestDESConnector.customDESRead("", "", response))
       }
       ex.getMessage shouldBe "ETMP returned a Not Found status"
@@ -203,7 +202,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "throw an InternalServerException" in {
       val response = HttpResponse(500)
-      val ex = intercept[InternalServerException]{
+      val ex = intercept[InternalServerException] {
         await(TestDESConnector.customDESRead("", "", response))
       }
       ex.getMessage shouldBe "ETMP returned an internal server error"
@@ -211,7 +210,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "throw an BadGatewayException" in {
       val response = HttpResponse(502)
-      val ex = intercept[BadGatewayException]{
+      val ex = intercept[BadGatewayException] {
         await(TestDESConnector.customDESRead("", "", response))
       }
       ex.getMessage shouldBe "ETMP returned an upstream error"
@@ -219,7 +218,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return an Upstream4xxResponse when an uncaught 4xx Http response status is found" in {
       val response = HttpResponse(405)
-      val ex = intercept[Upstream4xxResponse]{
+      val ex = intercept[Upstream4xxResponse] {
         await(TestDESConnector.customDESRead("http://", "testUrl", response))
       }
       ex.getMessage shouldBe "http:// of 'testUrl' returned 405. Response body: 'null'"
@@ -227,7 +226,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return an Upstream5xxResponse when an uncaught 5xx Http response status is found" in {
       val response = HttpResponse(505)
-      val ex = intercept[Upstream5xxResponse]{
+      val ex = intercept[Upstream5xxResponse] {
         await(TestDESConnector.customDESRead("http://", "testUrl", response))
       }
       ex.getMessage shouldBe "http:// of 'testUrl' returned 505. Response body: 'null'"
@@ -239,14 +238,10 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
   }
 
   "Calling .obtainBP" when {
-
-    class Setup(appConf: ApplicationConfig) extends DESConnector(appConf) {
+    class Setup extends DESConnector(mockAppConfig) {
       val nino: String = createRandomNino
-
-      override lazy val serviceUrl = "http://google.com"
       override val environment = "???"
       override val token = "DES"
-      override val baseUrl = "/capital-gains-subscription/"
       override val obtainBpUrl = "/obtainBp"
 
       override val urlHeaderEnvironment = "??? see srcs, found in config"
@@ -256,7 +251,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-    "for an accepted BP request, return success" in new Setup(mockAppConfig) {
+    "for an accepted BP request, return success" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
@@ -266,7 +261,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(this.obtainBp(nino)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "for a successful BP request return success" in new Setup(mockAppConfig) {
+    "for a successful BP request return success" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
@@ -276,7 +271,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(this.obtainBp(nino)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "for a conflicted request, return success" in new Setup(mockAppConfig) {
+    "for a conflicted request, return success" in new Setup {
 
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
@@ -288,7 +283,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
 
 
-    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup(mockAppConfig) {
+    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
@@ -297,7 +292,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(this.obtainBp(nino)(hc, global)) shouldBe NotFoundDesResponse
     }
 
-    "for a request that triggers an InternalServerException return a DES errorResponse" in new Setup(mockAppConfig) {
+    "for a request that triggers an InternalServerException return a DES errorResponse" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
@@ -306,7 +301,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(this.obtainBp(nino)(hc, global)) shouldBe DesErrorResponse
     }
 
-    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup(mockAppConfig) {
+    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
@@ -315,7 +310,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(this.obtainBp(nino)(hc, global)) shouldBe DesErrorResponse
     }
 
-      "making a call for a bad request, return the reason" in new Setup(mockAppConfig) {
+    "making a call for a bad request, return the reason" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
@@ -325,7 +320,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(this.obtainBp(nino)(hc, global)) shouldBe InvalidDesRequest("etmp reason")
     }
 
-    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup(mockAppConfig) {
+    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
