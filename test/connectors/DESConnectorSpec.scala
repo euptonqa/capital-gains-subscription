@@ -20,6 +20,7 @@ import java.util.UUID
 import uk.gov.hmrc.play.http.ws.WSHttp
 import scala.concurrent.ExecutionContext.global
 import common.Utilities.createRandomNino
+import config.ApplicationConfig
 import helpers.TestHelper._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -40,19 +41,21 @@ import scala.concurrent.Future
 
 class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter{
 
+  val mockAppConfig: ApplicationConfig = mock[ApplicationConfig]
+
   class MockHttp extends WSGet with WSPost with WSPut with HttpAuditing {
     override val hooks = Seq(AuditingHook)
-    override def appName = "test"
-    override def auditConnector: AuditConnector = ???
+    override def appName: String = "test"
+    override def auditConnector: AuditConnector = mock[AuditConnector]
   }
 
-  val mockWSHttp = mock[MockHttp]
+  val mockWSHttp: MockHttp = mock[MockHttp]
 
-  object TestDESConnector extends DESConnector {
-    override val serviceUrl = "test"
+  object TestDESConnector extends DESConnector(mockAppConfig) {
+    override lazy val serviceUrl = "test"
     override val environment = "test"
     override val token = "test"
-    override val http = mockWSHttp
+    override val http: MockHttp = mockWSHttp
   }
 
   before {
@@ -237,10 +240,10 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
   "Calling .obtainBP" when {
 
-    trait Setup extends DESConnector {
-      val nino = createRandomNino
+    class Setup(appConf: ApplicationConfig) extends DESConnector(appConf) {
+      val nino: String = createRandomNino
 
-      override val serviceUrl = "http://google.com"
+      override lazy val serviceUrl = "http://google.com"
       override val environment = "???"
       override val token = "DES"
       override val baseUrl = "/capital-gains-subscription/"
@@ -248,36 +251,32 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
       override val urlHeaderEnvironment = "??? see srcs, found in config"
       override val urlHeaderAuthorization = "??? same as above"
-      override val http = mock[WSHttp]
+      override val http: WSHttp = mock[WSHttp]
     }
 
     implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-    "for an accepted BP request, return success" in new Setup {
+    "for an accepted BP request, return success" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      await(this.obtainBp(nino)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "for a successful BP request return success" in new Setup {
+    "for a successful BP request return success" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      await(this.obtainBp(nino)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "for a conflicted request, return success" in new Setup {
+    "for a conflicted request, return success" in new Setup(mockAppConfig) {
 
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
@@ -285,66 +284,54 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      await(this.obtainBp(nino)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
 
-    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new NotFoundException("")))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe NotFoundDesResponse
+      await(this.obtainBp(nino)(hc, global)) shouldBe NotFoundDesResponse
     }
 
-    "for a request that triggers an InternalServerException return a DES errorResponse" in new Setup {
+    "for a request that triggers an InternalServerException return a DES errorResponse" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new InternalServerException("")))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe DesErrorResponse
+      await(this.obtainBp(nino)(hc, global)) shouldBe DesErrorResponse
     }
 
-    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup {
+    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new BadGatewayException("")))
 
-      lazy val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe DesErrorResponse
+      await(this.obtainBp(nino)(hc, global)) shouldBe DesErrorResponse
     }
 
-      "making a call for a bad request, return the reason" in new Setup {
+      "making a call for a bad request, return the reason" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
 
-      val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe InvalidDesRequest("etmp reason")
+      await(this.obtainBp(nino)(hc, global)) shouldBe InvalidDesRequest("etmp reason")
     }
 
-    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup(mockAppConfig) {
 
       when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new NotFoundException("")))
 
-      val result = await(this.obtainBp(nino)(hc, global))
-
-      result shouldBe NotFoundDesResponse
+      await(this.obtainBp(nino)(hc, global)) shouldBe NotFoundDesResponse
     }
   }
 
