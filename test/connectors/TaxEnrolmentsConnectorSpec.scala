@@ -17,6 +17,8 @@
 package connectors
 
 import java.util.UUID
+
+import audit.Logging
 import config.ApplicationConfig
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -36,13 +38,16 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
 
   val mockWSHttp = mock[WSHttp]
   val mockAppConfig = mock[ApplicationConfig]
+  val mockLoggingUtils = mock[Logging]
 
-  object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector(mockAppConfig) {
+  object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector(mockAppConfig, mockLoggingUtils) {
     override val http: HttpPut with HttpGet with HttpPost = mockWSHttp
   }
 
   implicit val hc = mock[HeaderCarrier]
   val jsBody = Json.obj("reason" -> "y")
+  val auditMap: Map[String, String] = Map.empty
+  val auditTransactionName: String = ""
 
   def mockResponse(responseStatus: Int, responseJson: JsValue)(implicit headerCarrier: HeaderCarrier) : Unit = {
     when(mockWSHttp.PUT[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())
@@ -78,7 +83,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
 
     "with an Exception of type InternalServerException" should {
 
-      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new InternalServerException(""))
+      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new InternalServerException(""), auditMap, auditTransactionName)
 
       "return a TaxEnrolmentsErrorResponse" in {
         result shouldBe TaxEnrolmentsErrorResponse
@@ -87,7 +92,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
 
     "with an Exception of type BadGatewayException" should {
 
-      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new BadGatewayException(""))
+      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new BadGatewayException(""), auditMap, auditTransactionName)
 
       "return a TaxEnrolmentsErrorResponse" in {
         result shouldBe TaxEnrolmentsErrorResponse
@@ -96,7 +101,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
 
     "with an unhandled Exception" should {
 
-      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new Exception(""))
+      val result = TestTaxEnrolmentsConnector.recoverRequest("url", new Exception(""), auditMap, auditTransactionName)
 
       "return a TaxEnrolmentsErrorResponse" in {
         result shouldBe TaxEnrolmentsErrorResponse

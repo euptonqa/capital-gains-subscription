@@ -18,6 +18,7 @@ package connectors
 
 import java.util.UUID
 
+import audit.Logging
 import common.Utilities.createRandomNino
 import config.ApplicationConfig
 import helpers.TestHelper._
@@ -41,6 +42,8 @@ import scala.concurrent.Future
 class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
   val mockAppConfig: ApplicationConfig = mock[ApplicationConfig]
+  val mockLoggingUtils = mock[Logging]
+  val mockWSHttp: MockHttp = mock[MockHttp]
 
   class MockHttp extends WSGet with WSPost with WSPut with HttpAuditing {
     override val hooks = Seq(AuditingHook)
@@ -48,9 +51,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     override def auditConnector: AuditConnector = mock[AuditConnector]
   }
 
-  val mockWSHttp: MockHttp = mock[MockHttp]
-
-  object TestDESConnector extends DESConnector(mockAppConfig) {
+  object TestDESConnector extends DESConnector(mockAppConfig, mockLoggingUtils) {
     override lazy val serviceUrl = "test"
     override val environment = "test"
     override val token = "test"
@@ -238,7 +239,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
   }
 
   "Calling .obtainBP" when {
-    class Setup extends DESConnector(mockAppConfig) {
+    class Setup extends DESConnector(mockAppConfig, mockLoggingUtils) {
       val nino: String = createRandomNino
       override val environment = "???"
       override val token = "DES"
