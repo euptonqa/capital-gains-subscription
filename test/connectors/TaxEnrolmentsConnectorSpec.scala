@@ -18,6 +18,7 @@ package connectors
 
 import java.util.UUID
 
+import audit.Logging
 import config.ApplicationConfig
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -29,7 +30,6 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.http.ws.WSHttp
-import utils.LoggingUtils
 
 import scala.concurrent.Future
 
@@ -38,7 +38,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
 
   val mockWSHttp = mock[WSHttp]
   val mockAppConfig = mock[ApplicationConfig]
-  val mockLoggingUtils = mock[LoggingUtils]
+  val mockLoggingUtils = mock[Logging]
 
   object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector(mockAppConfig, mockLoggingUtils) {
     override val http: HttpPut with HttpGet with HttpPost = mockWSHttp

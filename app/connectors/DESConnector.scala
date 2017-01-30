@@ -16,14 +16,18 @@
 
 package connectors
 
+import audit.Logging
 import com.google.inject.{Inject, Singleton}
+import common.AuditConstants
 import config.{ApplicationConfig, WSHttp}
 import models.SubscriptionRequest
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json, Writes}
 import uk.gov.hmrc.play.http._
 import play.api.http.Status._
+import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.logging.Authorization
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -36,7 +40,7 @@ case class InvalidDesRequest(message: String) extends DesResponse
 
 
 @Singleton
-class DESConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunctions {
+class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) extends HttpErrorFunctions with ServicesConfig {
 
   lazy val serviceUrl: String = appConfig.baseUrl("des")
   lazy val serviceContext: String = appConfig.desContextUrl
@@ -71,76 +75,124 @@ class DESConnector @Inject()(appConfig: ApplicationConfig) extends HttpErrorFunc
   def subscribe(safeId: String, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
     val requestUrl: String = s"$serviceUrl$serviceContext/$safeId/subscription"
     val response = cPOST(requestUrl, Json.toJson(subscribeRequest))
+    val auditMap: Map[String, String] = Map("Safe Id" -> safeId, "Url" -> requestUrl)
 
     val ackReq = subscribeRequest.acknowledgementReference
     response map { r =>
       r.status match {
         case OK =>
           Logger.info(s"Successful DES submission for $ackReq")
+          logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+            detail = auditMap,
+            eventType = AuditConstants.eventTypeSuccess)
           SuccessDesResponse(r.json.as[JsObject])
         case CONFLICT =>
           Logger.warn(s"Duplicate submission for $ackReq has been reported")
+          logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+            detail = auditMap ++ Map("Conflict reason" -> r.body, "Status" -> r.status.toString),
+            eventType = AuditConstants.eventTypeConflict)
           SuccessDesResponse(r.json.as[JsObject])
         case ACCEPTED =>
           Logger.info(s"Accepted DES submission for $ackReq")
+          logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+            detail = auditMap,
+            eventType = AuditConstants.eventTypeSuccess)
           SuccessDesResponse(r.json.as[JsObject])
         case BAD_REQUEST =>
           val message = (r.json \ "reason").as[String]
           Logger.warn(s"Error with the request $message")
+          logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+            detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
+            eventType = AuditConstants.eventTypeFailure)
           InvalidDesRequest(message)
       }
     } recover {
       case ex: NotFoundException =>
         Logger.warn(s"Not found for $ackReq")
+        logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeNotFound)
         NotFoundDesResponse
       case ex: InternalServerException =>
         Logger.warn(s"Internal server error for $ackReq")
+        logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeInternalServerError)
         DesErrorResponse
       case ex: BadGatewayException =>
         Logger.warn(s"Bad gateway status for $ackReq")
+        logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
         Logger.warn(s"Exception of ${ex.toString} for $ackReq")
+        logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeGeneric)
         DesErrorResponse
     }
   }
-
-  def register(): Future[HttpResponse] = ???
 
   def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl = s"$serviceUrl$serviceContext$nino$obtainBpUrl"
     val jsonNino = Json.toJson(nino)
     val response = cPOST(requestUrl, jsonNino)
+    val auditMap: Map[String, String] = Map("Nino" -> nino, "Url" -> requestUrl)
 
     response map {
       r =>
         r.status match {
           case OK =>
             Logger.info("Successful DES request for BP number")
+            logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+              detail = auditMap,
+              eventType = AuditConstants.eventTypeSuccess)
             SuccessDesResponse(r.json.as[JsObject])
           case ACCEPTED =>
             Logger.info("Accepted DES request for BP number")
+            logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+              detail = auditMap,
+              eventType = AuditConstants.eventTypeSuccess)
             SuccessDesResponse(r.json.as[JsObject])
           case CONFLICT =>
             Logger.info("Conflicted DES request for BP number - BP Number already in existence")
+            logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+              detail = auditMap ++ Map("Conflict reason" -> r.body, "Status" -> r.status.toString),
+              eventType = AuditConstants.eventTypeConflict)
             SuccessDesResponse(r.json.as[JsObject])
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
+            logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+              detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
+              eventType = AuditConstants.eventTypeFailure)
             InvalidDesRequest(message)
         }
     } recover {
       case ex: NotFoundException =>
         Logger.warn("Not found exception for DES request for BP number")
+        logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeNotFound)
         NotFoundDesResponse
       case ex: InternalServerException =>
         Logger.warn("Internal server error for DES request for BP number")
+        logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeInternalServerError)
         DesErrorResponse
       case ex: BadGatewayException =>
         Logger.warn("Bad gateway status for DES request for BP number")
+        logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
         Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
+        logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
+          detail = auditMap,
+          eventType = AuditConstants.eventTypeGeneric)
         DesErrorResponse
     }
 

@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package utils
+package audit
 
-import audit.Auditing
 import com.google.inject.{Inject, Singleton}
+import common.AuditConstants
 import play.api.Logger
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 @Singleton
-class LoggingUtils @Inject()(auditing: Auditing) {
-
-  final val splunk = "SPLUNK AUDIT:\n"
-  final val eventTypeFailure: String = "CGTFailure"
-  final val eventTypeSuccess: String = "CGTSuccess"
-  final val eventTypeBadGateway: String = "BadGateway"
-  final val eventTypeInternalServerError: String = "InternalServerError"
-  final val eventTypeGeneric: String = "UnexpectedError"
+class Logging @Inject()(auditing: Auditing) {
 
   private def sendDataToSplunk(transactionName: String, detail: Map[String, String], eventType: String)(implicit hc: HeaderCarrier): Unit = {
-    Logger.debug(splunk + splunkToLogger(transactionName, detail, eventType))
+    Logger.debug(AuditConstants.splunk + splunkToLogger(transactionName, detail, eventType))
     auditing.sendDataEvent(
       transactionName = transactionName,
       detail = detail,
@@ -40,8 +33,8 @@ class LoggingUtils @Inject()(auditing: Auditing) {
     )
   }
 
-  private def splunkToLogger(transactionName: String, detail: Map[String, String], eventType: String): String = {
-    s"${if (eventType.nonEmpty) eventType + "\n"}$transactionName\n$detail"
+  private[audit] def splunkToLogger(transactionName: String, detail: Map[String, String], eventType: String): String = {
+    s"${if (eventType.nonEmpty) eventType + "\n" else ""}$transactionName\n$detail"
   }
 
   def audit(transactionName: String, detail: Map[String, String], eventType: String)(implicit hc: HeaderCarrier): Unit = {
