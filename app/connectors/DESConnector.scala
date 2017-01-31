@@ -73,12 +73,12 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
 
-  def subscribe(subscribeModel: SubscribeModel, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+  def subscribe(subscribeModel: SubscribeModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
     val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeModel.sap}/subscribe"
     val response = cPOST(requestUrl, Json.toJson(subscribeModel))
     val auditMap: Map[String, String] = Map("Safe Id" -> subscribeModel.sap, "Url" -> requestUrl)
 
-    val ackReq = subscribeRequest.acknowledgementReference
+    val ackReq = subscribeModel.sap
     response map { r =>
       r.status match {
         case OK =>
