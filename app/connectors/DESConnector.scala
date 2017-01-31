@@ -18,15 +18,17 @@ package connectors
 
 import audit.Logging
 import javax.inject.{Inject, Singleton}
+
 import common.AuditConstants._
 import config.{ApplicationConfig, WSHttp}
-import models.{RegisterModel, SubscribeModel}
+import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -49,6 +51,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val environment = "test"
   val token = "des"
   val obtainBpUrl = "/register"
+  val obtainBpUrlGhost = "/non-resident/individual/register" //TODO: Add routing in dynamic stub
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
@@ -166,6 +169,52 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
+  def obtainBpGhost(fullDetailsModel: FullDetailsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl: String = s"$serviceUrl$serviceContext$obtainBpUrlGhost"
+    val jsonFullDetails = Json.toJson(fullDetailsModel)
+    val response = cPOST(requestUrl, jsonFullDetails)
+    val auditMap: Map[String, String] = Map("Full details" -> fullDetailsModel.toString, "Url" -> requestUrl)
+      response map {
+        r =>
+          r.status match {
+            case OK =>
+              Logger.info("Successful DES request for BP number")
+              logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeSuccess)
+              SuccessDesResponse(r.json)
+            case ACCEPTED =>
+              Logger.info("Accepted DES request for BP number")
+              logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeSuccess)
+              SuccessDesResponse(r.json)
+            case CONFLICT =>
+              Logger.info("Conflicted DES request for BP number - BP Number already in existence")
+              logger.audit(transactionDESObtainBPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
+              SuccessDesResponse(r.json)
+            case BAD_REQUEST =>
+              val message = (r.json \ "reason").as[String]
+              Logger.warn(s"Error with the request $message")
+              logger.audit(transactionDESObtainBPGhost, failureAuditMap(auditMap, r), eventTypeFailure)
+              InvalidDesRequest(message)
+          }
+      } recover {
+        case ex: NotFoundException =>
+          Logger.warn("Not found exception for DES request for BP number")
+          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeNotFound)
+          NotFoundDesResponse
+        case ex: InternalServerException =>
+          Logger.warn("Internal server error for DES request for BP number")
+          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeInternalServerError)
+          DesErrorResponse
+        case ex: BadGatewayException =>
+          Logger.warn("Bad gateway status for DES request for BP number")
+          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeBadGateway)
+          DesErrorResponse
+        case ex: Exception =>
+          Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
+          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeGeneric)
+          DesErrorResponse
+      }
+    }
+
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
     response.status match {
       case BAD_REQUEST => response
@@ -176,5 +225,4 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       case _ => handleResponse(http, url)(response)
     }
   }
-
 }

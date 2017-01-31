@@ -50,4 +50,9 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, dESService: D
       case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
     }
   }
+
+  /*def subscribeGhost(fullDetails: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      val fullDetails =
+  }*/
 }
