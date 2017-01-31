@@ -20,11 +20,12 @@ import audit.Logging
 import com.google.inject.{Inject, Singleton}
 import common.AuditConstants
 import config.{ApplicationConfig, WSHttp}
-import models.SubscriptionRequest
+import models.{RegisterModel, SubscribeModel, SubscriptionRequest}
 import play.api.Logger
-import play.api.libs.json.{JsObject, Json, Writes}
+import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import uk.gov.hmrc.play.http._
 import play.api.http.Status._
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.logging.Authorization
 
@@ -33,7 +34,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 sealed trait DesResponse
-case class SuccessDesResponse(response: JsObject) extends DesResponse
+case class SuccessDesResponse(response: JsValue) extends DesResponse
 case object NotFoundDesResponse extends DesResponse
 case object DesErrorResponse extends DesResponse
 case class InvalidDesRequest(message: String) extends DesResponse
@@ -46,7 +47,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   lazy val serviceContext: String = appConfig.desContextUrl
   val environment = "test"
   val token = "des"
-  val obtainBpUrl = "/obtainBp"
+  val obtainBpUrl = "/register"
 
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
@@ -72,12 +73,12 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
 
-  def subscribe(safeId: String, subscribeRequest: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-    val requestUrl: String = s"$serviceUrl$serviceContext/$safeId/subscription"
-    val response = cPOST(requestUrl, Json.toJson(subscribeRequest))
-    val auditMap: Map[String, String] = Map("Safe Id" -> safeId, "Url" -> requestUrl)
+  def subscribe(subscribeModel: SubscribeModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeModel.sap}/subscribe"
+    val response = cPOST(requestUrl, Json.toJson(subscribeModel))
+    val auditMap: Map[String, String] = Map("Safe Id" -> subscribeModel.sap, "Url" -> requestUrl)
 
-    val ackReq = subscribeRequest.acknowledgementReference
+    val ackReq = subscribeModel.sap
     response map { r =>
       r.status match {
         case OK =>
@@ -85,19 +86,22 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessDesResponse(r.json.as[JsObject])
+          SuccessDesResponse(r.json
+          )
         case CONFLICT =>
           Logger.warn(s"Duplicate submission for $ackReq has been reported")
           logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
             detail = auditMap ++ Map("Conflict reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeConflict)
-          SuccessDesResponse(r.json.as[JsObject])
+          SuccessDesResponse(r.json
+          )
         case ACCEPTED =>
           Logger.info(s"Accepted DES submission for $ackReq")
           logger.audit(transactionName = AuditConstants.transactionDESSubscribe,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessDesResponse(r.json.as[JsObject])
+          SuccessDesResponse(r.json
+          )
         case BAD_REQUEST =>
           val message = (r.json \ "reason").as[String]
           Logger.warn(s"Error with the request $message")
@@ -134,11 +138,11 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  def obtainBp(nino: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$serviceContext$nino$obtainBpUrl"
-    val jsonNino = Json.toJson(nino)
+  def obtainBp(registerModel: RegisterModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerModel.nino}$obtainBpUrl"
+    val jsonNino = Json.toJson(registerModel)
     val response = cPOST(requestUrl, jsonNino)
-    val auditMap: Map[String, String] = Map("Nino" -> nino, "Url" -> requestUrl)
+    val auditMap: Map[String, String] = Map("Nino" -> registerModel.nino.nino, "Url" -> requestUrl)
 
     response map {
       r =>
@@ -148,19 +152,21 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
               detail = auditMap,
               eventType = AuditConstants.eventTypeSuccess)
-            SuccessDesResponse(r.json.as[JsObject])
+            SuccessDesResponse(r.json)
           case ACCEPTED =>
             Logger.info("Accepted DES request for BP number")
             logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
               detail = auditMap,
               eventType = AuditConstants.eventTypeSuccess)
-            SuccessDesResponse(r.json.as[JsObject])
+            SuccessDesResponse(r.json
+            )
           case CONFLICT =>
             Logger.info("Conflicted DES request for BP number - BP Number already in existence")
             logger.audit(transactionName = AuditConstants.transactionDESObtainBP,
               detail = auditMap ++ Map("Conflict reason" -> r.body, "Status" -> r.status.toString),
               eventType = AuditConstants.eventTypeConflict)
-            SuccessDesResponse(r.json.as[JsObject])
+            SuccessDesResponse(r.json
+            )
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
