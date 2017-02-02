@@ -17,7 +17,7 @@
 package connectors
 
 import audit.Logging
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import common.AuditConstants
 import common.Keys.TaxEnrolmentsKeys
 import config.{ApplicationConfig, WSHttp}
