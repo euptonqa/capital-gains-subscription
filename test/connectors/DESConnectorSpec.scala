@@ -312,7 +312,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe DesErrorResponse
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe InvalidDesRequest("etmp reason")
     }
 
     "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
