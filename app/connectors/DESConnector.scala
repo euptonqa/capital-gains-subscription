@@ -174,46 +174,46 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val jsonFullDetails = Json.toJson(fullDetailsModel)
     val response = cPOST(requestUrl, jsonFullDetails)
     val auditMap: Map[String, String] = Map("Full details" -> fullDetailsModel.toString, "Url" -> requestUrl)
-      response map {
-        r =>
-          r.status match {
-            case OK =>
-              Logger.info("Successful DES request for BP number")
-              logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeSuccess)
-              SuccessDesResponse(r.json)
-            case ACCEPTED =>
-              Logger.info("Accepted DES request for BP number")
-              logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeSuccess)
-              SuccessDesResponse(r.json)
-            case CONFLICT =>
-              Logger.info("Conflicted DES request for BP number - BP Number already in existence")
-              logger.audit(transactionDESObtainBPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
-              SuccessDesResponse(r.json)
-            case BAD_REQUEST =>
-              val message = (r.json \ "reason").as[String]
-              Logger.warn(s"Error with the request $message")
-              logger.audit(transactionDESObtainBPGhost, failureAuditMap(auditMap, r), eventTypeFailure)
-              InvalidDesRequest(message)
-          }
-      } recover {
-        case ex: NotFoundException =>
-          Logger.warn("Not found exception for DES request for BP number")
-          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeNotFound)
-          NotFoundDesResponse
-        case ex: InternalServerException =>
-          Logger.warn("Internal server error for DES request for BP number")
-          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeInternalServerError)
-          DesErrorResponse
-        case ex: BadGatewayException =>
-          Logger.warn("Bad gateway status for DES request for BP number")
-          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeBadGateway)
-          DesErrorResponse
-        case ex: Exception =>
-          Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
-          logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeGeneric)
-          DesErrorResponse
-      }
+    response map {
+      r =>
+        r.status match {
+          case OK =>
+            Logger.info("Successful DES request for BP number")
+            logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case ACCEPTED =>
+            Logger.info("Accepted DES request for BP number")
+            logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case CONFLICT =>
+            Logger.info("Conflicted DES request for BP number - BP Number already in existence")
+            logger.audit(transactionDESObtainBPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
+            SuccessDesResponse(r.json)
+          case BAD_REQUEST =>
+            val message = (r.json \ "reason").as[String]
+            Logger.warn(s"Error with the request $message")
+            logger.audit(transactionDESObtainBPGhost, failureAuditMap(auditMap, r), eventTypeFailure)
+            InvalidDesRequest(message)
+        }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn("Not found exception for DES request for BP number")
+        logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeNotFound)
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn("Internal server error for DES request for BP number")
+        logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeInternalServerError)
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn("Bad gateway status for DES request for BP number")
+        logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeBadGateway)
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
+        logger.audit(transactionDESObtainBPGhost, auditMap, eventTypeGeneric)
+        DesErrorResponse
     }
+  }
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
     response.status match {
