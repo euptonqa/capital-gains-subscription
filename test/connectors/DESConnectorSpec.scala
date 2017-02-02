@@ -22,7 +22,7 @@ import audit.Logging
 import common.Utilities.createRandomNino
 import config.ApplicationConfig
 import helpers.TestHelper._
-import models.{RegisterModel, SubscribeModel}
+import models.{FullDetails, RegisterModel, SubscribeModel}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
@@ -236,21 +236,95 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
   }
 
-  "Calling .register" should {
+  class Setup extends DESConnector(mockAppConfig, mockLoggingUtils) {
+    val nino: String = createRandomNino
+    override val environment = "???"
+    override val token = "DES"
+    override val obtainBpUrl = "/obtainBp"
 
+    override val urlHeaderEnvironment = "??? see srcs, found in config"
+    override val urlHeaderAuthorization = "??? same as above"
+    override val http: WSHttp = mock[WSHttp]
+  }
+
+
+  "Calling .obtainBPGhost" when {
+
+    implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+    val details = FullDetails("joe", "smith", "addressLineOne", Some("addressLineTwo"), "city", Some("county"), "postcode", "country")
+
+    "for an accepted BP request, return success" in new Setup {
+
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+    }
+
+    "for a successful BP request return success" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+    }
+
+    "for a conflicted request, return success" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+    }
+
+    "for a request that triggers a NotFoundException return a NotFoundResponse" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new NotFoundException("")))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe NotFoundDesResponse
+    }
+
+    "for a request that triggers an InternalServerException, return a DES errorResponse" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new InternalServerException("")))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe DesErrorResponse
+    }
+
+    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new BadGatewayException("")))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe DesErrorResponse
+    }
+
+    "making a call for a bad request, return the reason" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+        ArgumentMatchers.any())(ArgumentMatchers.any(),
+        ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe DesErrorResponse
+    }
+
+    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
+        thenReturn(Future.failed(new NotFoundException("")))
+
+      await(this.obtainBpGhost(details)(hc, global)) shouldBe NotFoundDesResponse
+    }
   }
 
   "Calling .obtainBP" when {
-    class Setup extends DESConnector(mockAppConfig, mockLoggingUtils) {
-      val nino: String = createRandomNino
-      override val environment = "???"
-      override val token = "DES"
-      override val obtainBpUrl = "/obtainBp"
-
-      override val urlHeaderEnvironment = "??? see srcs, found in config"
-      override val urlHeaderAuthorization = "??? same as above"
-      override val http: WSHttp = mock[WSHttp]
-    }
 
     implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 

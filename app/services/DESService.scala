@@ -29,22 +29,22 @@ import scala.concurrent.Future
 @Singleton
 class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
-  def fetchSap(response: DesResponse) = {
-    response match {
-      case SuccessDesResponse(data) => {
-        Future.successful(data.as[String])}
-      case InvalidDesRequest(message) => Future.failed(new Exception(message))
-    }
-  }
-
-  def fetchCGTReference(response: DesResponse) = {
-    response match {
-      case SuccessDesResponse(data) => Future.successful(data.as[String])
-      case InvalidDesRequest(message) => Future.failed(new Exception(message))
-    }
-  }
-
   def subscribeUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
+
+    def fetchSap(response: DesResponse) = {
+      response match {
+        case SuccessDesResponse(data) => {
+          Future.successful(data.as[String])}
+        case InvalidDesRequest(message) => Future.failed(new Exception(message))
+      }
+    }
+
+    def fetchCGTReference(response: DesResponse) = {
+      response match {
+        case SuccessDesResponse(data) => Future.successful(data.as[String])
+        case InvalidDesRequest(message) => Future.failed(new Exception(message))
+      }
+    }
 
     for {
       bpResponse <- dESConnector.obtainBp(RegisterModel(Nino(nino)))
@@ -57,6 +57,22 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
   }
 
   def subscribeGhostUser(fullDetails: FullDetails)(implicit hc: HeaderCarrier): Future[String] = {
+
+    def fetchSap(response: DesResponse) = {
+      response match {
+        case SuccessDesResponse(data) => {
+          Future.successful(data.as[String])}
+        case InvalidDesRequest(message) => Future.failed(new Exception(message))
+      }
+    }
+
+    def fetchCGTReference(response: DesResponse) = {
+      response match {
+        case SuccessDesResponse(data) => Future.successful(data.as[String])
+        case InvalidDesRequest(message) => Future.failed(new Exception(message))
+      }
+    }
+
     for {
       bpResponse <- dESConnector.obtainBpGhost(fullDetails)
       sap <- fetchSap(bpResponse)
