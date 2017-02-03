@@ -17,7 +17,7 @@
 package auth
 
 import checks.ResidentIndividualCheck
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import play.api.mvc.Result
 import services.AuthService
 import uk.gov.hmrc.play.http.HeaderCarrier

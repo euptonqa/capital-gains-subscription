@@ -16,7 +16,7 @@
 
 package audit
 
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import config.MicroserviceAuditConnector
 import uk.gov.hmrc.play.audit.AuditExtensions
 import uk.gov.hmrc.play.audit.model.{Audit, DataEvent}
