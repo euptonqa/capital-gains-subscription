@@ -16,18 +16,9 @@
 
 package services
 
-import connectors._
-import models.{FullDetails, RegisterModel, SubscribeModel, SubscriptionRequest}
-import org.mockito.ArgumentMatchers
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
-
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class DESServiceSpec extends UnitSpec with MockitoSugar with WithFakeApplication {
 

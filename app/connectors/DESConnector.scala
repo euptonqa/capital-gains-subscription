@@ -56,12 +56,12 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
-  def subscribe(subscribeModel: SubscribeModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeModel.sap}/subscribe"
-    val response = cPOST(requestUrl, Json.toJson(subscribeModel))
-    val auditMap: Map[String, String] = Map("Safe Id" -> subscribeModel.sap, "Url" -> requestUrl)
+  def subscribe(subscribeIndividualModel: SubscribeIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeIndividualModel.sap}/subscribe"
+    val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
+    val auditMap: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
 
-    val ackReq = subscribeModel.sap
+    val ackReq = subscribeIndividualModel.sap
     response map { r =>
       r.status match {
         case OK =>
@@ -169,7 +169,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  def obtainBpGhost(fullDetailsModel: FullDetailsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+  def obtainBpGhost(fullDetailsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl: String = s"$serviceUrl$serviceContext$obtainBpUrlGhost"
     val jsonFullDetails = Json.toJson(fullDetailsModel)
     val response = cPOST(requestUrl, jsonFullDetails)

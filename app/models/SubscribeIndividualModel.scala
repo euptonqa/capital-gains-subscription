@@ -18,8 +18,8 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class SubscribeModel(sap: String)
+case class SubscribeIndividualModel(sap: String)
 
-object SubscribeModel {
-  implicit val formats: OFormat[SubscribeModel] = Json.format[SubscribeModel]
+object SubscribeIndividualModel {
+  implicit val formats: OFormat[SubscribeIndividualModel] = Json.format[SubscribeIndividualModel]
 }

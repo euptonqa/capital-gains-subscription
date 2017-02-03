@@ -50,14 +50,14 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
     for {
       bpResponse <- dESConnector.obtainBp(RegisterModel(Nino(nino)))
       sap <- fetchSap(bpResponse)
-      subscribeResponse <- dESConnector.subscribe(SubscribeModel(sap))
+      subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
       cgtRef <- fetchCGTReference(subscribeResponse)
       enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(cgtRef))
       enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(cgtRef))
     } yield cgtRef
   }
 
-  def subscribeGhostUser(fullDetailsModel: FullDetailsModel)(implicit hc: HeaderCarrier): Future[String] = {
+  def subscribeGhostUser(fullDetailsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
 
     def fetchSap(response: DesResponse) = {
       response match {
@@ -77,7 +77,7 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
     for {
       bpResponse <- dESConnector.obtainBpGhost(fullDetailsModel)
       sap <- fetchSap(bpResponse)
-      subscribeResponse <- dESConnector.subscribe(SubscribeModel(sap))
+      subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
       cgtRef <- fetchCGTReference(subscribeResponse)
       enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(cgtRef))
       enrolmentsSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(cgtRef))
