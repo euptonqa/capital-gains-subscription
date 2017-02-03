@@ -23,9 +23,9 @@ import scala.concurrent.Future
 
 trait MicroserviceHelloWorld extends BaseController {
 
-	val hello = Action.async { implicit request =>
-		Future.successful(Ok("Hello world"))
-	}
+  val hello = Action.async { implicit request =>
+    Future.successful(Ok("Hello world"))
+  }
 }
 
 object MicroserviceHelloWorld extends MicroserviceHelloWorld
