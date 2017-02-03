@@ -17,8 +17,9 @@
 package services
 
 import javax.inject.{Inject, Singleton}
+
 import connectors._
-import models.{FullDetails, RegisterModel, SubscribeModel, SubscriptionRequest}
+import models._
 import play.api.libs.json.Json
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -56,7 +57,7 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
     } yield cgtRef
   }
 
-  def subscribeGhostUser(fullDetails: FullDetails)(implicit hc: HeaderCarrier): Future[String] = {
+  def subscribeGhostUser(fullDetailsModel: FullDetailsModel)(implicit hc: HeaderCarrier): Future[String] = {
 
     def fetchSap(response: DesResponse) = {
       response match {
@@ -74,7 +75,7 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
     }
 
     for {
-      bpResponse <- dESConnector.obtainBpGhost(fullDetails)
+      bpResponse <- dESConnector.obtainBpGhost(fullDetailsModel)
       sap <- fetchSap(bpResponse)
       subscribeResponse <- dESConnector.subscribe(SubscribeModel(sap))
       cgtRef <- fetchCGTReference(subscribeResponse)
