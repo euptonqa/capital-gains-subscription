@@ -22,7 +22,7 @@ import audit.Logging
 import common.Utilities.createRandomNino
 import config.ApplicationConfig
 import helpers.TestHelper._
-import models.{RegisterModel, SubscribeIndividualModel, UserFactsModel}
+import models.{RegisterIndividualModel, SubscribeIndividualModel, UserFactsModel}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
@@ -39,13 +39,15 @@ import uk.gov.hmrc.play.http.{Upstream4xxResponse, Upstream5xxResponse, _}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter {
 
   val mockAppConfig: ApplicationConfig = mock[ApplicationConfig]
   val mockLoggingUtils = mock[Logging]
   val mockWSHttp: MockHttp = mock[MockHttp]
+  implicit val hc = mock[HeaderCarrier]
+  implicit val ec = mock[ExecutionContext]
 
   class MockHttp extends WSGet with WSPost with WSPut with HttpAuditing {
     override val hooks = Seq(AuditingHook)
@@ -54,10 +56,13 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
   }
 
   object TestDESConnector extends DESConnector(mockAppConfig, mockLoggingUtils) {
+    val nino: String = createRandomNino
     override lazy val serviceUrl = "test"
     override val environment = "test"
     override val token = "test"
     override val http: MockHttp = mockWSHttp
+    override val urlHeaderEnvironment = "??? see srcs, found in config"
+    override val urlHeaderAuthorization = "??? same as above"
   }
 
   before {
@@ -84,8 +89,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return success with a valid safeId and ackRef" in {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -94,8 +99,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return success with an accepted response" in {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -104,8 +109,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return success with a conflicted submission" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -114,8 +119,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a BAD_REQUEST with an invalid safeId and a valid ackRef" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyInvalidSafeID)))
 
@@ -124,8 +129,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a BAD_REQUEST with a valid safeID and an invalid ackRef" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -134,8 +139,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a NOT_FOUND error with an ackRef containing 'not found'" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(NOT_FOUND, responseJson = Some(Json.obj("reason" -> "not found")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(NOT_FOUND, responseJson = Some(Json.obj("reason" -> "not found")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -144,8 +149,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a SERVICE UNAVAILABLE error with an ackRef containing 'serviceunavailable'" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, responseJson = Some(Json.obj("reason" -> "serviceunavailable")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, responseJson = Some(Json.obj("reason" -> "serviceunavailable")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -154,8 +159,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a INTERNAL SERVER ERROR with an ackRef containing 'servererror'" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.obj("reason" -> "servererror")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.obj("reason" -> "servererror")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -164,8 +169,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a INTERNAL SERVER ERROR with an ackRef containing 'sapnumbermissing'" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.obj("reason" -> "sapnumbermissing")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.obj("reason" -> "sapnumbermissing")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -174,8 +179,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return a SERVICE UNAVAILABLE ERROR with an ackRef containing 'notprocessed'" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, responseJson = Some(Json.obj("reason" -> "notprocessed")))))
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(SERVICE_UNAVAILABLE, responseJson = Some(Json.obj("reason" -> "notprocessed")))))
 
       val result = await(TestDESConnector.subscribe(SubscribeIndividualModel(dummyValidSafeID)))
 
@@ -186,12 +191,12 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
   "customDESRead" should {
 
     "return the HttpResponse on a bad request" in {
-      val response = HttpResponse(400)
+      val response = HttpResponse(BAD_REQUEST)
       await(TestDESConnector.customDESRead("", "", response)) shouldBe response
     }
 
     "throw a NotFoundException" in {
-      val response = HttpResponse(404)
+      val response = HttpResponse(NOT_FOUND)
       val ex = intercept[NotFoundException] {
         await(TestDESConnector.customDESRead("", "", response))
       }
@@ -199,12 +204,12 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
 
     "return the HttpResponse on a conflict" in {
-      val response = HttpResponse(409)
+      val response = HttpResponse(CONFLICT)
       await(TestDESConnector.customDESRead("", "", response)) shouldBe response
     }
 
     "throw an InternalServerException" in {
-      val response = HttpResponse(500)
+      val response = HttpResponse(INTERNAL_SERVER_ERROR)
       val ex = intercept[InternalServerException] {
         await(TestDESConnector.customDESRead("", "", response))
       }
@@ -212,7 +217,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
 
     "throw an BadGatewayException" in {
-      val response = HttpResponse(502)
+      val response = HttpResponse(BAD_GATEWAY)
       val ex = intercept[BadGatewayException] {
         await(TestDESConnector.customDESRead("", "", response))
       }
@@ -220,7 +225,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
 
     "return an Upstream4xxResponse when an uncaught 4xx Http response status is found" in {
-      val response = HttpResponse(405)
+      val response = HttpResponse(METHOD_NOT_ALLOWED)
       val ex = intercept[Upstream4xxResponse] {
         await(TestDESConnector.customDESRead("http://", "testUrl", response))
       }
@@ -228,7 +233,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
 
     "return an Upstream5xxResponse when an uncaught 5xx Http response status is found" in {
-      val response = HttpResponse(505)
+      val response = HttpResponse(HTTP_VERSION_NOT_SUPPORTED)
       val ex = intercept[Upstream5xxResponse] {
         await(TestDESConnector.customDESRead("http://", "testUrl", response))
       }
@@ -236,175 +241,205 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
   }
 
-  class Setup extends DESConnector(mockAppConfig, mockLoggingUtils) {
-    val nino: String = createRandomNino
-    override val environment = "???"
-    override val token = "DES"
-    override val obtainBpUrl = "/obtainBp"
-
-    override val urlHeaderEnvironment = "??? see srcs, found in config"
-    override val urlHeaderAuthorization = "??? same as above"
-    override val http: WSHttp = mock[WSHttp]
-  }
-
-
   "Calling .obtainBPGhost" when {
 
-    implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
-
     val details = UserFactsModel("joe", "smith", "addressLineOne", Some("addressLineTwo"), "city", Some("county"), "postcode", "country")
+    implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-    "for an accepted BP request, return success" in new Setup {
+    "for an accepted BP request" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return success" in {
+        await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      }
     }
 
-    "for a successful BP request return success" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
+    "for a successful request" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return success" in {
+        await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      }
     }
 
-    "for a conflicted request, return success" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
+    "for a conflicted request" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return success" in {
+        await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      }
     }
 
-    "for a request that triggers a NotFoundException return a NotFoundResponse" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new NotFoundException("")))
+    "for a request that triggers a NotFoundException" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new NotFoundException("")))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe NotFoundDesResponse
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return a NotFoundResponse" in {
+        await(result) shouldBe NotFoundDesResponse
+      }
     }
 
-    "for a request that triggers an InternalServerException, return a DES errorResponse" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new InternalServerException("")))
+    "for a request that triggers an InternalServerException" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new InternalServerException("")))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe DesErrorResponse
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return a DESErrorResponse" in {
+        await(result) shouldBe DesErrorResponse
+      }
     }
 
-    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new BadGatewayException("")))
+    "for a request that triggers a BadGatewayException" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new BadGatewayException("")))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe DesErrorResponse
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return a DESErrorResponse" in {
+        await(result) shouldBe DesErrorResponse
+      }
     }
 
-    "making a call for a bad request, return the reason" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
+    "making a call for a bad request" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe InvalidDesRequest("etmp reason")
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return the reason" in {
+        await(result) shouldBe InvalidDesRequest("etmp reason")
+      }
     }
 
-    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
-        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.failed(new NotFoundException("")))
+    "making a call for a request that triggers a NotFoundException" should {
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.failed(new NotFoundException("")))
 
-      await(this.obtainBpGhost(details)(hc, global)) shouldBe NotFoundDesResponse
+      val result = TestDESConnector.obtainBpGhost(details)
+
+      "return a NotFoundDesResponse" in {
+        await(result) shouldBe NotFoundDesResponse
+      }
     }
   }
 
   "Calling .obtainBP" when {
 
-    implicit val hc = HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+    val nino = TestDESConnector.nino
+    implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-    "for an accepted BP request, return success" in new Setup {
+    "for an Accepted request, return success" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
-        ArgumentMatchers.any())(ArgumentMatchers.any(),
-        ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+        (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+          .thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "for a successful BP request return success" in new Setup {
+    "for an OK request return success" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "for a conflicted request, return success" in new Setup {
+    "for a conflicted request, return success" should {
 
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
 
-    "for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+    "for a request that triggers a NotFoundException return a NotFoundDesResponse" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new NotFoundException("")))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe NotFoundDesResponse
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe NotFoundDesResponse
     }
 
-    "for a request that triggers an InternalServerException return a DES errorResponse" in new Setup {
+    "for a request that triggers an InternalServerException return a DES errorResponse" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new InternalServerException("")))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe DesErrorResponse
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe DesErrorResponse
     }
 
-    "return a DesErrorResponse when a BadGatewayException occurs" in new Setup {
+    "return a DesErrorResponse when a BadGatewayException occurs" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new BadGatewayException("")))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe DesErrorResponse
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe DesErrorResponse
     }
 
-    "making a call for a bad request, return the reason" in new Setup {
+    "making a call for a bad request, return the reason" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe InvalidDesRequest("etmp reason")
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe InvalidDesRequest("etmp reason")
     }
 
-    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" in new Setup {
+    "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" should {
 
-      when(http.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
+      when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())).
         thenReturn(Future.failed(new NotFoundException("")))
 
-      await(this.obtainBp(RegisterModel(Nino(nino)))(hc, global)) shouldBe NotFoundDesResponse
+      val result = TestDESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
+
+      await(result) shouldBe NotFoundDesResponse
     }
   }
-
 }

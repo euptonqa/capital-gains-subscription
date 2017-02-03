@@ -48,7 +48,7 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
     }
 
     for {
-      bpResponse <- dESConnector.obtainBp(RegisterModel(Nino(nino)))
+      bpResponse <- dESConnector.obtainBp(RegisterIndividualModel(Nino(nino)))
       sap <- fetchSap(bpResponse)
       subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
       cgtRef <- fetchCGTReference(subscribeResponse)

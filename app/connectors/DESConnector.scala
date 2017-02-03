@@ -122,7 +122,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   private def failureAuditMap(auditMap: Map[String, String], response: HttpResponse) =
     auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
-  def obtainBp(registerModel: RegisterModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+  def obtainBp(registerModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl = s"$serviceUrl$serviceContext/individual/${registerModel.nino}$obtainBpUrl"
     val jsonNino = Json.toJson(registerModel)
     val response = cPOST(requestUrl, jsonNino)

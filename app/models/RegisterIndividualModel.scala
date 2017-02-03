@@ -19,8 +19,8 @@ package models
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.domain.Nino
 
-case class RegisterModel (nino: Nino)
+case class RegisterIndividualModel(nino: Nino)
 
-object RegisterModel {
-  implicit val formats: OFormat[RegisterModel] = Json.format[RegisterModel]
+object RegisterIndividualModel {
+  implicit val formats: OFormat[RegisterIndividualModel] = Json.format[RegisterIndividualModel]
 }
