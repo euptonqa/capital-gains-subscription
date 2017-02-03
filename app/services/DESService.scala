@@ -34,8 +34,7 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
 
     def fetchSap(response: DesResponse) = {
       response match {
-        case SuccessDesResponse(data) => {
-          Future.successful(data.as[String])}
+        case SuccessDesResponse(data) => Future.successful(data.as[String])
         case InvalidDesRequest(message) => Future.failed(new Exception(message))
       }
     }
@@ -61,8 +60,7 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
 
     def fetchSap(response: DesResponse) = {
       response match {
-        case SuccessDesResponse(data) => {
-          Future.successful(data.as[String])}
+        case SuccessDesResponse(data) => Future.successful(data.as[String])
         case InvalidDesRequest(message) => Future.failed(new Exception(message))
       }
     }

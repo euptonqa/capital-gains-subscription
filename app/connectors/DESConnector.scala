@@ -122,11 +122,11 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   private def failureAuditMap(auditMap: Map[String, String], response: HttpResponse) =
     auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
-  def obtainBp(registerModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerModel.nino}$obtainBpUrl"
-    val jsonNino = Json.toJson(registerModel)
+  def obtainBp(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerIndividualModel.nino}$obtainBpUrl"
+    val jsonNino = Json.toJson(registerIndividualModel)
     val response = cPOST(requestUrl, jsonNino)
-    val auditMap: Map[String, String] = Map("Nino" -> registerModel.nino.nino, "Url" -> requestUrl)
+    val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> requestUrl)
 
     response map {
       r =>
@@ -169,11 +169,11 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  def obtainBpGhost(fullDetailsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+  def obtainBpGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl: String = s"$serviceUrl$serviceContext$obtainBpUrlGhost"
-    val jsonFullDetails = Json.toJson(fullDetailsModel)
+    val jsonFullDetails = Json.toJson(userFactsModel)
     val response = cPOST(requestUrl, jsonFullDetails)
-    val auditMap: Map[String, String] = Map("Full details" -> fullDetailsModel.toString, "Url" -> requestUrl)
+    val auditMap: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
     response map {
       r =>
         r.status match {
