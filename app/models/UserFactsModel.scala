@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json._
 
 case class UserFactsModel(firstName: String,
                           lastName: String,
@@ -29,4 +29,5 @@ case class UserFactsModel(firstName: String,
 
 object UserFactsModel {
   implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
+  implicit val reads = Json.reads[UserFactsModel]
 }

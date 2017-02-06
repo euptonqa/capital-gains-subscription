@@ -50,8 +50,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   val environment = "test"
   val token = "des"
-  val obtainBpUrl = "/register"
-  val obtainBpUrlGhost = "/non-resident/individual/register" //TODO: Add routing in dynamic stub
+  val obtainSAPUrl = "/register"
+  val obtainSAPUrlGhost = "/non-resident/individual/register" //TODO: Add routing in dynamic stub
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
@@ -123,7 +123,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
   def obtainSAP(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerIndividualModel.nino}$obtainBpUrl"
+    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerIndividualModel.nino}$obtainSAPUrl"
     val jsonNino = Json.toJson(registerIndividualModel)
     val response = cPOST(requestUrl, jsonNino)
     val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> requestUrl)
@@ -170,7 +170,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   def obtainSAPGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl: String = s"$serviceUrl$serviceContext$obtainBpUrlGhost"
+    val requestUrl: String = s"$serviceUrl$serviceContext$obtainSAPUrlGhost"
     val jsonFullDetails = Json.toJson(userFactsModel)
     val response = cPOST(requestUrl, jsonFullDetails)
     val auditMap: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)

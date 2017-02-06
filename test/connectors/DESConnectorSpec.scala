@@ -241,12 +241,12 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
   }
 
-  "Calling .obtainBPGhost" when {
+  "Calling .obtainSAPGhost" when {
 
     val details = UserFactsModel("joe", "smith", "addressLineOne", Some("addressLineTwo"), "city", Some("county"), "postcode", "country")
     implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
-    "for an accepted BP request" should {
+    "for an accepted SAP request" should {
 
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
@@ -344,7 +344,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     }
   }
 
-  "Calling .obtainBP" when {
+  "Calling .obtainSAP" when {
 
     val nino = TestDESConnector.nino
     implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
