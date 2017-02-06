@@ -19,8 +19,8 @@ package common
 object AuditConstants {
   val splunk = "SPLUNK AUDIT:\n"
   val transactionDESSubscribe = "CGT DES Subscribe"
-  val transactionDESObtainBP = "CGT DES Obtain BP"
-  val transactionDESObtainBPGhost = "CGT DES Obtain BP Ghost"
+  val transactionDESObtainSAP = "CGT DES Obtain SAP"
+  val transactionDESObtainSAPGhost = "CGT DES Obtain SAP Ghost"
   val transactionTaxEnrolmentsIssuer = "CGT Tax Enrolments Issuer"
   val transactionTaxEnrolmentsSubscribe = "CGT Tax Enrolments Subscribe"
   val eventTypeFailure: String = "CGTFailure"

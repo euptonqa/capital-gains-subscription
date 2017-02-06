@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 import models.ExceptionResponse
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent}
-import services.DESService
+import services.RegistrationSubscriptionService
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -31,10 +31,10 @@ import scala.concurrent.Future
 import scala.util.{Success, Try}
 
 @Singleton
-class SubscriptionController @Inject()(actions: AuthorisedActions, dESService: DESService) extends BaseController {
+class SubscriptionController @Inject()(actions: AuthorisedActions, registrationSubscriptionService: RegistrationSubscriptionService) extends BaseController {
 
   //TODO replace stubbed method with injected service
-  def subscribeUser(nino: Nino)(implicit hc: HeaderCarrier): Future[String] = dESService.subscribeUser(nino.nino)
+  def subscribeUser(nino: Nino)(implicit hc: HeaderCarrier): Future[String] = registrationSubscriptionService.subscribeKnownUser(nino.nino)
 
   def subscribeResidentIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
 
