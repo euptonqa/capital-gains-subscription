@@ -104,8 +104,10 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   @inline
-  private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) =
+  private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) = {
+    Logger.info("Made a post request to the stub on url " + url)
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
+  }
 
   private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
     headerCarrier.
