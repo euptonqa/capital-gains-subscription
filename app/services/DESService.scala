@@ -17,8 +17,10 @@
 package services
 
 import javax.inject.{Inject, Singleton}
+
 import connectors._
 import models.{RegisterModel, SubscribeModel, SubscriptionRequest}
+import play.api.Logger
 import play.api.libs.json.Json
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -31,10 +33,11 @@ class DESService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: T
 
   def subscribeUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
 
+    Logger.warn("Issuing a call to DES (stub) to register and subscribe")
+
     def fetchSap(response: DesResponse) = {
       response match {
-        case SuccessDesResponse(data) => {
-          Future.successful(data.as[String])}
+        case SuccessDesResponse(data) => Future.successful(data.as[String])
         case InvalidDesRequest(message) => Future.failed(new Exception(message))
       }
     }
