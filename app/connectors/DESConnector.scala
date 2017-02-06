@@ -183,5 +183,4 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       case _ => handleResponse(http, url)(response)
     }
   }
-
 }
