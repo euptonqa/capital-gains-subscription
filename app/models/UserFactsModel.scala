@@ -29,5 +29,4 @@ case class UserFactsModel(firstName: String,
 
 object UserFactsModel {
   implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
-  implicit val reads = Json.reads[UserFactsModel]
 }

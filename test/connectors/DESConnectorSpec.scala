@@ -34,11 +34,10 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.http.logging.SessionId
-import uk.gov.hmrc.play.http.ws.{WSGet, WSHttp, WSPost, WSPut}
+import uk.gov.hmrc.play.http.ws.{WSGet, WSPost, WSPut}
 import uk.gov.hmrc.play.http.{Upstream4xxResponse, Upstream5xxResponse, _}
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.ExecutionContext.global
 import scala.concurrent.{ExecutionContext, Future}
 
 class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar with BeforeAndAfter {
