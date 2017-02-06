@@ -54,6 +54,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
   def subscribe(subscribeModel: SubscribeModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+
+    Logger.warn("Made a post request to the stub with a subscribers sap of " + subscribeModel.sap)
+
     val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeModel.sap}/subscribe"
     val response = cPOST(requestUrl, Json.toJson(subscribeModel))
     val auditMap: Map[String, String] = Map("Safe Id" -> subscribeModel.sap, "Url" -> requestUrl)
@@ -105,7 +108,6 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   @inline
   private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) = {
-    Logger.warn("Made a post request to the stub on url " + url)
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
   }
 
@@ -123,6 +125,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   def obtainBp(registerModel: RegisterModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
     val requestUrl = s"$serviceUrl$serviceContext/individual/${registerModel.nino}$obtainBpUrl"
+
+    Logger.warn("Made a post request to the stub with a url of " + requestUrl)
+
     val jsonNino = Json.toJson(registerModel)
     val response = cPOST(requestUrl, jsonNino)
     val auditMap: Map[String, String] = Map("Nino" -> registerModel.nino.nino, "Url" -> requestUrl)
