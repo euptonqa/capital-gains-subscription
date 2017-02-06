@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 
 import connectors._
 import models._
+import play.api.Logger
 import play.api.libs.json.Json
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -31,6 +32,7 @@ import scala.concurrent.Future
 class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
+    Logger.warn("Issuing a call to DES (stub) to register and subscribe")
     for {
       sapResponse <- dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
       cgtRef <- subscribe(sapResponse)
