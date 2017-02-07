@@ -18,15 +18,17 @@ package connectors
 
 import audit.Logging
 import javax.inject.{Inject, Singleton}
+
 import common.AuditConstants._
 import config.{ApplicationConfig, WSHttp}
-import models.{RegisterModel, SubscribeModel}
+import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,20 +50,21 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   val environment = "test"
   val token = "des"
-  val obtainBpUrl = "/register"
+  val obtainSAPUrl = "/register"
+  val obtainSAPUrlGhost = "/non-resident/individual/register" //TODO: Add routing in dynamic stub
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
-  def subscribe(subscribeModel: SubscribeModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+  def subscribe(subscribeIndividualModel: SubscribeIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
-    Logger.warn("Made a post request to the stub with a subscribers sap of " + subscribeModel.sap)
+    Logger.warn("Made a post request to the stub with a subscribers sap of " + subscribeIndividualModel.sap)
 
-    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeModel.sap}/subscribe"
-    val response = cPOST(requestUrl, Json.toJson(subscribeModel))
-    val auditMap: Map[String, String] = Map("Safe Id" -> subscribeModel.sap, "Url" -> requestUrl)
+    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeIndividualModel.sap}/subscribe"
+    val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
+    val auditMap: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
 
-    val ackReq = subscribeModel.sap
+    val ackReq = subscribeIndividualModel.sap
     response map { r =>
       r.status match {
         case OK =>
@@ -123,52 +126,96 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   private def failureAuditMap(auditMap: Map[String, String], response: HttpResponse) =
     auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
-  def obtainBp(registerModel: RegisterModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerModel.nino}$obtainBpUrl"
+  def obtainSAP(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerIndividualModel.nino}$obtainSAPUrl"
+    val jsonNino = Json.toJson(registerIndividualModel)
+    val response = cPOST(requestUrl, jsonNino)
+    val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> requestUrl)
 
     Logger.warn("Made a post request to the stub with a url of " + requestUrl)
-
-    val jsonNino = Json.toJson(registerModel)
-    val response = cPOST(requestUrl, jsonNino)
-    val auditMap: Map[String, String] = Map("Nino" -> registerModel.nino.nino, "Url" -> requestUrl)
-
     response map {
       r =>
         r.status match {
           case OK =>
-            Logger.info("Successful DES request for BP number")
-            logger.audit(transactionDESObtainBP, auditMap, eventTypeSuccess)
+            Logger.info("SuccessTransactionDESObtainSAP number")
+            logger.audit(transactionDESObtainSAP, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case ACCEPTED =>
-            Logger.info("Accepted DES request for BP number")
-            logger.audit(transactionDESObtainBP, auditMap, eventTypeSuccess)
+            Logger.info("AcceptTransactionDESObtainSAP number")
+            logger.audit(transactionDESObtainSAP, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case CONFLICT =>
-            Logger.info("Conflicted DES request for BP number - BP Number already in existence")
-            logger.audit(transactionDESObtainBP, conflictAuditMap(auditMap, r), eventTypeConflict)
+            Logger.info("ConflictTransactionDESObtainSAP Number already in existence")
+            logger.audit(transactionDESObtainSAP, conflictAuditMap(auditMap, r), eventTypeConflict)
             SuccessDesResponse(r.json)
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
-            logger.audit(transactionDESObtainBP, failureAuditMap(auditMap, r), eventTypeFailure)
+            logger.audit(transactionDESObtainSAP, failureAuditMap(auditMap, r), eventTypeFailure)
             InvalidDesRequest(message)
         }
     } recover {
       case _: NotFoundException =>
-        Logger.warn("Not found exception for DES request for BP number")
-        logger.audit(transactionDESObtainBP, auditMap, eventTypeNotFound)
+        Logger.warn("Not found exception transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAP, auditMap, eventTypeNotFound)
         NotFoundDesResponse
       case _: InternalServerException =>
-        Logger.warn("Internal server error for DES request for BP number")
-        logger.audit(transactionDESObtainBP, auditMap, eventTypeInternalServerError)
+        Logger.warn("Internal server error transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAP, auditMap, eventTypeInternalServerError)
         DesErrorResponse
       case _: BadGatewayException =>
-        Logger.warn("Bad gateway status for DES request for BP number")
-        logger.audit(transactionDESObtainBP, auditMap, eventTypeBadGateway)
+        Logger.warn("Bad gateway status transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAP, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.toString} for DES request for BP number")
-        logger.audit(transactionDESObtainBP, auditMap, eventTypeGeneric)
+        Logger.warn(s"Exception of ${ex.toString} transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAP, auditMap, eventTypeGeneric)
+        DesErrorResponse
+    }
+  }
+
+  def obtainSAPGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl: String = s"$serviceUrl$serviceContext$obtainSAPUrlGhost"
+    val jsonFullDetails = Json.toJson(userFactsModel)
+    val response = cPOST(requestUrl, jsonFullDetails)
+    val auditMap: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
+    response map {
+      r =>
+        r.status match {
+          case OK =>
+            Logger.info("SuccessTransactionDESObtainSAP number")
+            logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case ACCEPTED =>
+            Logger.info("AcceptTransactionDESObtainSAP number")
+            logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case CONFLICT =>
+            Logger.info("ConflictTransactionDESObtainSAP Number already in existence")
+            logger.audit(transactionDESObtainSAPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
+            SuccessDesResponse(r.json)
+          case BAD_REQUEST =>
+            val message = (r.json \ "reason").as[String]
+            Logger.warn(s"Error with the request $message")
+            logger.audit(transactionDESObtainSAPGhost, failureAuditMap(auditMap, r), eventTypeFailure)
+            InvalidDesRequest(message)
+        }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn("Not found exception transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeNotFound)
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn("Internal server error transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeInternalServerError)
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn("Bad gateway status transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeBadGateway)
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} transactionDESObtainSAP number")
+        logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
   }
@@ -176,10 +223,10 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
     response.status match {
       case BAD_REQUEST => response
-      case NOT_FOUND => throw new NotFoundException("ETMP returned a Not Found status")
+      case NOT_FOUND => throw new NotFoundException("DES returned a Not Found status")
       case CONFLICT => response
-      case INTERNAL_SERVER_ERROR => throw new InternalServerException("ETMP returned an internal server error")
-      case BAD_GATEWAY => throw new BadGatewayException("ETMP returned an upstream error")
+      case INTERNAL_SERVER_ERROR => throw new InternalServerException("DES returned an internal server error")
+      case BAD_GATEWAY => throw new BadGatewayException("DES returned an upstream error")
       case _ => handleResponse(http, url)(response)
     }
   }

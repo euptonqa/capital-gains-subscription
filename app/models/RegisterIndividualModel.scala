@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package common
+package models
 
-object Keys {
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.domain.Nino
 
-  object TaxEnrolmentsKeys {
-    val issuer = "issuer"
-    val subscriber = "subscriber"
-    val serviceName = "HMRC-CGT"
-    val ninoIdentifier = "NINO"
-    val postcodeIdentifier = "POSTCODE"
-    val callbackUrl = ""
-  }
+case class RegisterIndividualModel(nino: Nino)
+
+object RegisterIndividualModel {
+  implicit val formats: OFormat[RegisterIndividualModel] = Json.format[RegisterIndividualModel]
 }

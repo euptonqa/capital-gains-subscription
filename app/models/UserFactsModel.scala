@@ -16,11 +16,17 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.domain.Nino
+import play.api.libs.json._
 
-case class RegisterModel (nino: Nino)
+case class UserFactsModel(firstName: String,
+                          lastName: String,
+                          addressLineOne: String,
+                          addressLineTwo: Option[String],
+                          townOrCity: String,
+                          county: Option[String],
+                          postCode: String,
+                          country: String)
 
-object RegisterModel {
-  implicit val formats: OFormat[RegisterModel] = Json.format[RegisterModel]
+object UserFactsModel {
+  implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
 }

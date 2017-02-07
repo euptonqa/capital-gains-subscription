@@ -32,7 +32,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 sealed trait TaxEnrolmentsResponse
-case class SuccessTaxEnrolmentsResponse(string: JsObject) extends TaxEnrolmentsResponse
+case class SuccessTaxEnrolmentsResponse() extends TaxEnrolmentsResponse
 case object TaxEnrolmentsErrorResponse extends TaxEnrolmentsResponse
 case class InvalidTaxEnrolmentsRequest(message: String) extends TaxEnrolmentsResponse
 
@@ -74,6 +74,8 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
     val response = cPUT(putUrl, body)
     val auditMap: Map[String, String] = Map("Subscription Id" -> subscriptionId, "Url" -> putUrl)
 
+    Logger.warn("Made a post request to the tax enrolments issuer stub with a subscription id of" + subscriptionId)
+
     response map { r =>
       r.status match {
         case NO_CONTENT =>
@@ -81,7 +83,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
           logger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessTaxEnrolmentsResponse(r.json.as[JsObject])
+          SuccessTaxEnrolmentsResponse()
 
         case BAD_REQUEST =>
           val message = (r.json \ "reason").as[String]
@@ -101,6 +103,8 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
     val response = cPUT(putUrl, body)
     val auditMap: Map[String, String] = Map("Subscription Id" -> subscriptionId, "Url" -> putUrl)
 
+    Logger.warn("Made a post request to the tax enrolments subscriber stub with a subscription id of" + subscriptionId)
+
     response map { r =>
       r.status match {
         case NO_CONTENT =>
@@ -108,7 +112,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
           logger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsSubscribe,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessTaxEnrolmentsResponse(r.json.as[JsObject])
+          SuccessTaxEnrolmentsResponse()
 
         case BAD_REQUEST | UNAUTHORIZED =>
           val message = (r.json \ "reason").as[String]

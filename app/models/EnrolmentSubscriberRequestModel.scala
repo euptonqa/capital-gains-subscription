@@ -18,8 +18,10 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class SubscribeModel(sap: String)
+case class EnrolmentSubscriberRequestModel(serviceName: String,
+                                           callbackUrl: String,
+                                           etmpId: String)
 
-object SubscribeModel {
-  implicit val formats: OFormat[SubscribeModel] = Json.format[SubscribeModel]
+case object EnrolmentSubscriberRequestModel {
+  implicit val formats: OFormat[EnrolmentSubscriberRequestModel] = Json.format[EnrolmentSubscriberRequestModel]
 }

@@ -18,11 +18,17 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class RoutesSpec extends UnitSpec with WithFakeApplication {
 
-  "The URL for the subscribeResidentIndividual Action" should {
-    "be equal to /capital-gains-subscription/subscribe/resident/individual" in {
-      val path = controllers.routes.SubscriptionController.subscribeResidentIndividual("AA123456A")
-      path.url shouldBe "/capital-gains-subscription/subscribe/resident/individual?nino=AA123456A"
+  "The URL for the subscribeKnownIndividual Action" should {
+    "be equal to /capital-gains-subscription/subscribe/individual" in {
+      val path = controllers.routes.SubscriptionController.subscribeKnownIndividual("AA123456A")
+      path.url shouldBe "/capital-gains-subscription/subscribe/individual?nino=AA123456A"
     }
   }
 
+  "The URL for the subscribeGhostIndividual Action" should {
+    "be equal to /capital-gains-subscription/subscribe/individual" in {
+      val path = controllers.routes.SubscriptionController.subscribeGhostIndividual()
+      path.url shouldBe "/capital-gains-subscription/subscribe/individual"
+    }
+  }
 }

@@ -32,7 +32,7 @@ class AuthorisedActions @Inject()(authService: AuthService) {
     f(authCheck)
   }
 
-  def authorisedResidentIndividualAction(action: Boolean => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+  def authorisedIndividualAction(action: Boolean => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
     for {
       authority <- authService.getAuthority()
       authorised <- ResidentIndividualCheck.check(authority)
