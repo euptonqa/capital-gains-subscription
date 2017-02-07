@@ -25,4 +25,11 @@ class RoutesSpec extends UnitSpec with WithFakeApplication {
     }
   }
 
+  "The URL for the subscribeCompany Action" should {
+    "be equal to /capital-gains-subscription/subscribe/company" in {
+      val path = controllers.routes.SubscriptionController.subscribeCompany()
+      path.url shouldBe "/capital-gains-subscription/subscribe/company"
+    }
+  }
+
 }

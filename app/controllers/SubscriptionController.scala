@@ -33,7 +33,6 @@ import scala.util.{Success, Try}
 @Singleton
 class SubscriptionController @Inject()(actions: AuthorisedActions, dESService: DESService) extends BaseController {
 
-  //TODO replace stubbed method with injected service
   def subscribeUser(nino: Nino)(implicit hc: HeaderCarrier): Future[String] = dESService.subscribeUser(nino.nino)
 
   def subscribeResidentIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
@@ -50,4 +49,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, dESService: D
       case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
     }
   }
+
+  def subscribeCompany(): Action[AnyContent] = TODO
+
 }

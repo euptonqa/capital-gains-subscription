@@ -3,3 +3,5 @@
 GET        /hello-world             controllers.MicroserviceHelloWorld.hello
 
 GET       /subscribe/resident/individual  @controllers.SubscriptionController.subscribeResidentIndividual(nino: String)
+
+GET       /subscribe/company              @controllers.SubscriptionController.subscribeCompany
