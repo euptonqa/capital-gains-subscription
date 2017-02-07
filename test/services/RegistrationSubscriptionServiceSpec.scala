@@ -96,8 +96,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     "with a valid DesResponse for SAP" should {
 
       val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y"))
+        SuccessTaxEnrolmentsResponse(),
+        SuccessTaxEnrolmentsResponse()
       )
 
       val result = await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap")), taxEnrolmentsBody))
@@ -110,8 +110,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     "with a failed DesResponse for registration" should {
 
       val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y"))
+        SuccessTaxEnrolmentsResponse(),
+        SuccessTaxEnrolmentsResponse()
       )
 
       val ex = intercept[Exception] {
@@ -126,8 +126,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     "with a failed DesResponse for subscription" should {
 
       val testService = setupMock(InvalidDesRequest("error message"),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y"))
+        SuccessTaxEnrolmentsResponse(),
+        SuccessTaxEnrolmentsResponse()
       )
 
       val ex = intercept[Exception] {
@@ -143,7 +143,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
       val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         InvalidTaxEnrolmentsRequest("error message"),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y"))
+        SuccessTaxEnrolmentsResponse()
       )
 
       val ex = intercept[Exception] {
@@ -158,7 +158,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     "with a failed Tax Enrolments subscriber response" should {
 
       val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
+        SuccessTaxEnrolmentsResponse(),
         InvalidTaxEnrolmentsRequest("error message")
       )
 
@@ -177,8 +177,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     "with a valid request" should {
 
       val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
+        SuccessTaxEnrolmentsResponse(),
+        SuccessTaxEnrolmentsResponse(),
         Some(SuccessDesResponse(Json.toJson("sap")))
       )
 
@@ -192,8 +192,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     "with an invalid request" should {
 
       val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-        SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
+        SuccessTaxEnrolmentsResponse(),
+        SuccessTaxEnrolmentsResponse(),
         Some(InvalidDesRequest("error message"))
       )
 
@@ -211,8 +211,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       "with a valid request" should {
 
         val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-          SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-          SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
+          SuccessTaxEnrolmentsResponse(),
+          SuccessTaxEnrolmentsResponse(),
           Some(SuccessDesResponse(Json.toJson("sap")))
         )
 
@@ -226,8 +226,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       "with an invalid request" should {
 
         val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-          SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
-          SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y")),
+          SuccessTaxEnrolmentsResponse(),
+          SuccessTaxEnrolmentsResponse(),
           Some(InvalidDesRequest("error message"))
         )
 

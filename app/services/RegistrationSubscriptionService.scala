@@ -70,7 +70,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
 
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
     response match {
-      case SuccessTaxEnrolmentsResponse(data) => Future.successful(data)
+      case SuccessTaxEnrolmentsResponse() => Future.successful()
       case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message))
     }
   }

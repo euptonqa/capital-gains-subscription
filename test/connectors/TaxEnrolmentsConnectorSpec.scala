@@ -120,7 +120,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getIssuerResponse("12345", jsBody))
 
       "return SuccessTaxEnrolmentsResponse with response body" in {
-        result shouldBe SuccessTaxEnrolmentsResponse(jsBody)
+        result shouldBe SuccessTaxEnrolmentsResponse()
       }
     }
 
@@ -221,7 +221,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberResponse("12345", jsBody))
 
       "return SuccessTaxEnrolmentsResponse with response body" in {
-        result shouldBe SuccessTaxEnrolmentsResponse(jsBody)
+        result shouldBe SuccessTaxEnrolmentsResponse()
       }
     }
 
