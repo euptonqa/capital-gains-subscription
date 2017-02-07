@@ -17,7 +17,7 @@
 package services
 
 import connectors._
-import models.UserFactsModel
+import models.{EnrolmentIssuerRequestModel, EnrolmentSubscriberRequestModel, Identifier, UserFactsModel}
 import org.mockito.ArgumentMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
@@ -57,6 +57,39 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
   }
 
   val userFactsModel = UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK")
+  val taxEnrolmentsBody = EnrolmentIssuerRequestModel("", Identifier("", ""))
+
+  "Calling RegistrationSubscriptionService .taxEnrolmentIssuerKnownUserBody" should {
+
+    val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
+    val result = service.taxEnrolmentIssuerKnownUserBody("AA123456B")
+
+    "return a formatted EnrolmentIssuerRequestModel" in {
+      await(result) shouldEqual EnrolmentIssuerRequestModel("HMRC-CGT",
+                                  Identifier("NINO", "AA123456B"))
+    }
+  }
+
+  "Calling RegistrationSubscriptionService .taxEnrolmentIssuerGhostUserBody" should {
+
+    val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
+    val result = service.taxEnrolmentIssuerGhostUserBody("ABC 123")
+
+    "return a formatted EnrolmentIssuerRequestModel" in {
+      await(result) shouldEqual EnrolmentIssuerRequestModel("HMRC-CGT",
+                                  Identifier("POSTCODE", "ABC 123"))
+    }
+  }
+
+  "Calling RegistrationSubscriptionService .taxEnrolmentSubscriberBody" should {
+
+    val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
+    val result = service.taxEnrolmentSubscriberBody("fake sap")
+
+    "return a formatted EnrolmentSubscriberRequestModel" in {
+      await(result) shouldEqual EnrolmentSubscriberRequestModel("HMRC-CGT", "", "fake sap")
+    }
+  }
 
   "Calling RegistrationSubscriptionService .subscribe" should {
 
@@ -67,7 +100,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse(Json.obj("x" -> "y"))
       )
 
-      val result = await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap"))))
+      val result = await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap")), taxEnrolmentsBody))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"
@@ -82,7 +115,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       val ex = intercept[Exception] {
-        await(testService.subscribe(InvalidDesRequest("error message")))
+        await(testService.subscribe(InvalidDesRequest("error message"), taxEnrolmentsBody))
       }
 
       "throw an exception with error message" in {
@@ -98,7 +131,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       val ex = intercept[Exception] {
-        await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap"))))
+        await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap")), taxEnrolmentsBody))
       }
 
       "throw an exception with error message" in {
@@ -114,7 +147,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       val ex = intercept[Exception] {
-        await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap"))))
+        await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap")), taxEnrolmentsBody))
       }
 
       "throw an exception with error message" in {
@@ -130,7 +163,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       val ex = intercept[Exception] {
-        await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap"))))
+        await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap")), taxEnrolmentsBody))
       }
 
       "throw an exception with error message" in {

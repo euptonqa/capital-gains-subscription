@@ -24,6 +24,7 @@ import play.api.Logger
 import play.api.libs.json.Json
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
+import common.Keys.TaxEnrolmentsKeys
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,25 +36,27 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
     Logger.warn("Issuing a call to DES (stub) to register and subscribe")
     for {
       sapResponse <- dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
-      cgtRef <- subscribe(sapResponse)
+      taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
+      cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
   }
 
   def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       sapResponse <- dESConnector.obtainSAPGhost(userFactsModel)
-      cgtRef <- subscribe(sapResponse)
+      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(userFactsModel.postCode)
+      cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
   }
 
-  private[services] def subscribe(sapResponse: DesResponse)(implicit hc: HeaderCarrier): Future[String] = {
+  private[services] def subscribe(sapResponse: DesResponse, taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       sap <- fetchDESResponse(sapResponse)
       subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
       cgtRef <- fetchDESResponse(subscribeResponse)
-      enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(cgtRef))
+      enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(taxEnrolmentsBody))
       issuerResponse <- fetchTaxEnrolmentsResponse(enrolmentIssuerRequest)
-      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(cgtRef))
+      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(taxEnrolmentSubscriberBody(sap)))
       subscriberResponse <- fetchTaxEnrolmentsResponse(enrolmentSubscriberRequest)
     } yield cgtRef
   }
@@ -71,4 +74,17 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
       case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message))
     }
   }
+
+  def taxEnrolmentIssuerKnownUserBody(nino: String): Future[EnrolmentIssuerRequestModel] = {
+    val identifier = Identifier(TaxEnrolmentsKeys.ninoIdentifier, nino)
+    Future.successful(EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier))
+  }
+
+  def taxEnrolmentIssuerGhostUserBody(postcode: String): Future[EnrolmentIssuerRequestModel] = {
+    val identifier = Identifier(TaxEnrolmentsKeys.postcodeIdentifier, postcode)
+    Future.successful(EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier))
+  }
+
+  def taxEnrolmentSubscriberBody(sap: String): EnrolmentSubscriberRequestModel =
+    EnrolmentSubscriberRequestModel(TaxEnrolmentsKeys.serviceName, TaxEnrolmentsKeys.callbackUrl, sap)
 }
