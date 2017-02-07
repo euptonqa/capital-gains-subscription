@@ -16,7 +16,7 @@
 
 package connectors
 
-import com.google.inject.{Inject, Singleton}
+import javax.inject.{Inject, Singleton}
 import config.WSHttp
 import models.AuthorisationDataModel
 import play.api.http.Status._
