@@ -16,21 +16,21 @@
 
 package helpers
 
-import models.SubscriptionRequest
+import models.SubscriptionReferenceModel
 
 object TestHelper extends TestHelper
 
 trait TestHelper {
 
-  val dummySubscriptionRequestValid = SubscriptionRequest("CGTUNIQUEREF")
-  val dummySubscriptionRequestBadRequest = SubscriptionRequest("badrequest")
-  val dummySubscriptionRequestNotFound = SubscriptionRequest("notfound")
-  val dummySubscriptionRequestDuplicate= SubscriptionRequest("duplicate")
-  val dummySubscriptionRequestServerError = SubscriptionRequest("servererror")
-  val dummySubscriptionRequestServiceUnavailable= SubscriptionRequest("serviceunavailable")
-  val dummySubscriptionRequestMissingRegime = SubscriptionRequest("missingregime")
-  val dummySubscriptionRequestSapNumberMissing = SubscriptionRequest("sapnumbermissing")
-  val dummySubscriptionRequestNotProcessed = SubscriptionRequest("notprocessed")
+  val dummySubscriptionRequestValid = SubscriptionReferenceModel("CGTUNIQUEREF")
+  val dummySubscriptionRequestBadRequest = SubscriptionReferenceModel("badrequest")
+  val dummySubscriptionRequestNotFound = SubscriptionReferenceModel("notfound")
+  val dummySubscriptionRequestDuplicate= SubscriptionReferenceModel("duplicate")
+  val dummySubscriptionRequestServerError = SubscriptionReferenceModel("servererror")
+  val dummySubscriptionRequestServiceUnavailable= SubscriptionReferenceModel("serviceunavailable")
+  val dummySubscriptionRequestMissingRegime = SubscriptionReferenceModel("missingregime")
+  val dummySubscriptionRequestSapNumberMissing = SubscriptionReferenceModel("sapnumbermissing")
+  val dummySubscriptionRequestNotProcessed = SubscriptionReferenceModel("notprocessed")
   val dummyValidSafeID = "XA0001234567890"
   val dummyInvalidSafeID = "YA0001234567890"
 

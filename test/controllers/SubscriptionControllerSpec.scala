@@ -18,12 +18,11 @@ package controllers
 
 import auth.AuthorisedActions
 import common.{AffinityConstants, CredentialStrengthConstants}
-import models.{AuthorisationDataModel, UserFactsModel}
+import models.{AuthorisationDataModel, SubscriptionReferenceModel, UserFactsModel}
 import org.mockito.ArgumentMatchers
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-
 import play.api.test.Helpers._
 import services.{AuthService, RegistrationSubscriptionService}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
@@ -76,7 +75,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
         "has a string representing the CGT reference" in {
           val data = contentAsString(result)
           val json = Json.parse(data)
-          json.as[String] shouldBe "CGT123456"
+          json.as[SubscriptionReferenceModel] shouldBe SubscriptionReferenceModel("CGT123456")
         }
       }
     }
@@ -171,7 +170,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
         "has a string representing the CGT reference" in {
           val data = contentAsString(result)
           val json = Json.parse(data)
-          json.as[String] shouldBe "CGT123456"
+          json.as[SubscriptionReferenceModel] shouldBe SubscriptionReferenceModel("CGT123456")
         }
       }
     }
@@ -266,10 +265,10 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
           contentType(result) shouldBe Some("application/json")
         }
 
-        "has a string representing the CGT reference" in {
+        "has a SubscriptionReferenceModel containing the CGT reference" in {
           val data = contentAsString(result)
           val json = Json.parse(data)
-          json.as[String] shouldBe "CGT123456"
+          json.as[SubscriptionReferenceModel] shouldBe SubscriptionReferenceModel("CGT123456")
         }
       }
     }

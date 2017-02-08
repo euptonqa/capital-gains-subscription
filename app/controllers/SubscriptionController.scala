@@ -19,7 +19,7 @@ package controllers
 import auth.AuthorisedActions
 import javax.inject.{Inject, Singleton}
 
-import models.{ExceptionResponse, UserFactsModel}
+import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
 import services.RegistrationSubscriptionService
@@ -66,7 +66,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def authorisedKnownIndividualAction(nino: Nino)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeKnownUser(nino.nino).map {
-      reference => Ok(Json.toJson(reference))
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
       case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
     }
@@ -74,7 +74,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def authorisedGhostIndividualAction(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeGhostUser(userFactsModel).map {
-      reference => Ok(Json.toJson(reference))
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
       case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
     }
