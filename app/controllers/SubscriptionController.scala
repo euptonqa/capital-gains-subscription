@@ -36,7 +36,17 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def subscribeKnownIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
     Try(Nino(nino)) match {
-      case Success(value) => actions.authorisedIndividualAction {
+      case Success(value) => actions.authorisedResidentIndividualAction {
+        case true => authorisedKnownIndividualAction(value)
+        case false => unauthorisedAction
+      }
+      case Failure(value) => unauthorisedAction
+    }
+  }
+
+  def subscribeNonResidentNinoIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
+    Try(Nino(nino)) match {
+      case Success(value) => actions.authorisedNonResidentIndividualAction {
         case true => authorisedKnownIndividualAction(value)
         case false => unauthorisedAction
       }
@@ -46,7 +56,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def subscribeGhostIndividual(): Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
-      case Success(value) => actions.authorisedIndividualAction {
+      case Success(value) => actions.authorisedNonResidentIndividualAction {
         case true => authorisedGhostIndividualAction(value)
         case false => unauthorisedAction
       }
