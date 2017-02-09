@@ -31,9 +31,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-
+@Singleton
 class SubscriptionController @Inject()(actions: AuthorisedActions, registrationSubscriptionService: RegistrationSubscriptionService) extends BaseController {
-
 
   def subscribeKnownIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
     Try(Nino(nino)) match {
