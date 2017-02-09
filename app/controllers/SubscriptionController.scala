@@ -40,7 +40,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
         case true => authorisedKnownIndividualAction(value)
         case false => unauthorisedAction
       }
-      case Failure(value) => unauthorisedAction
+      case Failure(_) => badRequest
     }
   }
 
@@ -50,7 +50,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
         case true => authorisedKnownIndividualAction(value)
         case false => unauthorisedAction
       }
-      case Failure(value) => unauthorisedAction
+      case Failure(_) => badRequest
     }
   }
 
@@ -60,7 +60,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
         case true => authorisedGhostIndividualAction(value)
         case false => unauthorisedAction
       }
-      case Failure(value) => unauthorisedAction
+      case Failure(_) => badRequest
     }
   }
 
@@ -81,4 +81,5 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
   }
 
   val unauthorisedAction = Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
+  val badRequest = Future.successful(BadRequest(Json.toJson(ExceptionResponse(BAD_REQUEST, "Bad Request"))))
 }

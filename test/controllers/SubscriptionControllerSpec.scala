@@ -27,6 +27,7 @@ import play.api.test.Helpers._
 import services.{AuthService, RegistrationSubscriptionService}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import org.mockito.Mockito._
+import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.play.auth.microservice.connectors.ConfidenceLevel
 
 import scala.concurrent.Future
@@ -140,12 +141,12 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
           contentType(result) shouldBe Some("application/json")
         }
 
-        "has a status code of 401" in {
-          (json \ "statusCode").as[Int] shouldBe 401
+        "has a status code of 400" in {
+          (json \ "statusCode").as[Int] shouldBe 400
         }
 
-        "has the message 'Unauthorised'" in {
-          (json \ "message").as[String] shouldBe "Unauthorised"
+        "has the message 'Bad Request'" in {
+          (json \ "message").as[String] shouldBe "Bad Request"
         }
       }
     }
@@ -235,12 +236,12 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
           contentType(result) shouldBe Some("application/json")
         }
 
-        "has a status code of 401" in {
-          (json \ "statusCode").as[Int] shouldBe 401
+        "has a status code of 400" in {
+          (json \ "statusCode").as[Int] shouldBe 400
         }
 
-        "has the message 'Unauthorised'" in {
-          (json \ "message").as[String] shouldBe "Unauthorised"
+        "has the message 'Bad Request'" in {
+          (json \ "message").as[String] shouldBe "Bad Request"
         }
       }
     }
@@ -306,7 +307,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
       val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK"))
       val fakeRequest = FakeRequest().withJsonBody(userFactsModel)
 
-      lazy val controller = setupController("CGT123456", authorised = false, subscriptionSuccess = false)
+      lazy val controller = setupController("CGT123456A", authorised = false, subscriptionSuccess = false)
       lazy val result = controller.subscribeGhostIndividual()(fakeRequest)
 
       "return a response" which {
@@ -317,8 +318,8 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
           contentType(result) shouldBe Some("application/json")
         }
 
-        "has a status code of 401" in {
-          (json \ "statusCode").as[Int] shouldBe 401
+        "has a status code of 400" in {
+          (json \ "statusCode").as[Int] shouldBe 400
         }
 
         "has the message 'Unauthorised'" in {
@@ -329,9 +330,9 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
     "the controller was not passed a valid UserFactsModel" should {
       val userFactsModel = Json.obj("x" -> "y")
-      val fakeRequest = FakeRequest().withJsonBody(userFactsModel)
+      val fakeRequest: Request[AnyContent] = FakeRequest().withJsonBody(userFactsModel)
 
-      lazy val controller = setupController("CGT123456", authorised = true, subscriptionSuccess = false)
+      lazy val controller = setupController("CG123456A", authorised = true, subscriptionSuccess = false)
       lazy val result = controller.subscribeGhostIndividual()(fakeRequest)
 
       "return a response" which {
@@ -346,8 +347,8 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
           (json \ "statusCode").as[Int] shouldBe 401
         }
 
-        "has the message 'Unauthorised'" in {
-          (json \ "message").as[String] shouldBe "Unauthorised"
+        "has the message 'Bad Request'" in {
+          (json \ "message").as[String] shouldBe "Bad Request"
         }
       }
     }

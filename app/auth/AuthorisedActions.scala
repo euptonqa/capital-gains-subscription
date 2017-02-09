@@ -16,9 +16,10 @@
 
 package auth
 
-import checks.{NonResidentIndividualCheck, ResidentIndividualCheck}
+
 import javax.inject.{Inject, Singleton}
 
+import checks.{NonResidentIndividualCheck, ResidentIndividualCheck}
 import play.api.mvc.Result
 import services.AuthService
 import uk.gov.hmrc.play.http.HeaderCarrier
