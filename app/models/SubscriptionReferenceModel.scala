@@ -16,11 +16,10 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
-case class SubscriptionRequest(acknowledgementReference: String)
+case class SubscriptionReferenceModel(cgtRef: String)
 
-object SubscriptionRequest {
-  implicit val read = Json.reads[SubscriptionRequest]
-  implicit val writes = Json.writes[SubscriptionRequest]
+object SubscriptionReferenceModel {
+  implicit val format: OFormat[SubscriptionReferenceModel] = Json.format[SubscriptionReferenceModel]
 }

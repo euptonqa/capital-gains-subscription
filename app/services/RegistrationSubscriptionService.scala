@@ -61,6 +61,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
     } yield cgtRef
   }
 
+  //TODO: Refactor into two seperate responses (subscription ref and sap)
   private def fetchDESResponse(response: DesResponse) = {
     response match {
       case SuccessDesResponse(data) => Future.successful(data.as[String])

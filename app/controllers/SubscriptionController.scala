@@ -19,7 +19,7 @@ package controllers
 import auth.AuthorisedActions
 import javax.inject.{Inject, Singleton}
 
-import models.{ExceptionResponse, UserFactsModel}
+import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
 import services.RegistrationSubscriptionService
@@ -36,7 +36,17 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def subscribeKnownIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
     Try(Nino(nino)) match {
-      case Success(value) => actions.authorisedIndividualAction {
+      case Success(value) => actions.authorisedResidentIndividualAction {
+        case true => authorisedKnownIndividualAction(value)
+        case false => unauthorisedAction
+      }
+      case Failure(value) => unauthorisedAction
+    }
+  }
+
+  def subscribeNonResidentNinoIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
+    Try(Nino(nino)) match {
+      case Success(value) => actions.authorisedNonResidentIndividualAction {
         case true => authorisedKnownIndividualAction(value)
         case false => unauthorisedAction
       }
@@ -46,7 +56,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def subscribeGhostIndividual(): Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
-      case Success(value) => actions.authorisedIndividualAction {
+      case Success(value) => actions.authorisedNonResidentIndividualAction {
         case true => authorisedGhostIndividualAction(value)
         case false => unauthorisedAction
       }
@@ -56,7 +66,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def authorisedKnownIndividualAction(nino: Nino)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeKnownUser(nino.nino).map {
-      reference => Ok(Json.toJson(reference))
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
       case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
     }
@@ -64,7 +74,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   def authorisedGhostIndividualAction(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeGhostUser(userFactsModel).map {
-      reference => Ok(Json.toJson(reference))
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
       case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
     }
