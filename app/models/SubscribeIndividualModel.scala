@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package common
+package models
 
-object Keys {
+import play.api.libs.json.{Json, OFormat}
 
-  object TaxEnrolmentsKeys {
-    val issuer = "issuer"
-    val subscriber = "subscriber"
-    val serviceName = "HMRC-CGT"
-    val ninoIdentifier = "NINO"
-    val postcodeIdentifier = "POSTCODE"
-    val callbackUrl = ""
-  }
+case class SubscribeIndividualModel(sap: String)
+
+object SubscribeIndividualModel {
+  implicit val formats: OFormat[SubscribeIndividualModel] = Json.format[SubscribeIndividualModel]
 }

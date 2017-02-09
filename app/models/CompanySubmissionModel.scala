@@ -18,9 +18,13 @@ package models
 
 import play.api.libs.json.Json
 
-case class SubscriptionRequest(acknowledgementReference: String)
+case class CompanySubmissionModel(
+                                   sap: Option[String],
+                                   contactAddress: Option[CompanyAddressModel],
+                                   registeredAddress: Option[CompanyAddressModel]
+                                 )
 
-object SubscriptionRequest {
-  implicit val read = Json.reads[SubscriptionRequest]
-  implicit val writes = Json.writes[SubscriptionRequest]
+object CompanySubmissionModel {
+  implicit val formats = Json.format[CompanySubmissionModel]
 }
+

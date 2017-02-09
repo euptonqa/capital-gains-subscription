@@ -17,10 +17,11 @@
 package models
 
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.domain.Nino
 
-case class RegisterModel (nino: Nino)
+case class EnrolmentSubscriberRequestModel(serviceName: String,
+                                           callbackUrl: String,
+                                           etmpId: String)
 
-object RegisterModel {
-  implicit val formats: OFormat[RegisterModel] = Json.format[RegisterModel]
+case object EnrolmentSubscriberRequestModel {
+  implicit val formats: OFormat[EnrolmentSubscriberRequestModel] = Json.format[EnrolmentSubscriberRequestModel]
 }

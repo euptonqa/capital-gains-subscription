@@ -2,6 +2,7 @@
 
 GET        /hello-world             controllers.MicroserviceHelloWorld.hello
 
-GET       /subscribe/resident/individual  @controllers.SubscriptionController.subscribeResidentIndividual(nino: String)
-
 GET       /subscribe/company              @controllers.SubscriptionController.subscribeCompany
+POST       /subscribe/resident/individual           @controllers.SubscriptionController.subscribeKnownIndividual(nino: String)
+POST       /subscribe/non-resident/individual-nino  @controllers.SubscriptionController.subscribeNonResidentNinoIndividual(nino: String)
+POST       /subscribe/non-resident/individual       @controllers.SubscriptionController.subscribeGhostIndividual

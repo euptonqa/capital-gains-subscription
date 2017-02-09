@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package common
+package checks
 
-object Keys {
+import models.AuthorisationDataModel
 
-  object TaxEnrolmentsKeys {
-    val issuer = "issuer"
-    val subscriber = "subscriber"
-    val serviceName = "HMRC-CGT"
-    val ninoIdentifier = "NINO"
-    val postcodeIdentifier = "POSTCODE"
-    val callbackUrl = ""
+import scala.concurrent.Future
+
+object NonResidentIndividualCheck {
+
+  def check(authorisationDataModel: Option[AuthorisationDataModel]): Future[Boolean] = {
+    authorisationDataModel match {
+      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => Future.successful(confidence.level >= 50)
+      case _ => Future.successful(false)
+    }
   }
 }

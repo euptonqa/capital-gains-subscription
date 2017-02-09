@@ -16,10 +16,17 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Json
 
-case class SubscribeModel(sap: String)
+case class CompanyAddressModel(
+                                addressLine1: Option[String],
+                                addressLine2: Option[String],
+                                addressLine3: Option[String],
+                                addressLine4: Option[String],
+                                postCode: Option[String],
+                                country: Option[String]
+                              )
 
-object SubscribeModel {
-  implicit val formats: OFormat[SubscribeModel] = Json.format[SubscribeModel]
+object CompanyAddressModel {
+  implicit val formats = Json.format[CompanyAddressModel]
 }

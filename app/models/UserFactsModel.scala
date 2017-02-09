@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package common
+package models
 
-object Keys {
+import play.api.libs.json._
 
-  object TaxEnrolmentsKeys {
-    val issuer = "issuer"
-    val subscriber = "subscriber"
-    val serviceName = "HMRC-CGT"
-    val ninoIdentifier = "NINO"
-    val postcodeIdentifier = "POSTCODE"
-    val callbackUrl = ""
-  }
+case class UserFactsModel(firstName: String,
+                          lastName: String,
+                          addressLineOne: String,
+                          addressLineTwo: Option[String],
+                          townOrCity: String,
+                          county: Option[String],
+                          postCode: String,
+                          country: String)
+
+object UserFactsModel {
+  implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
 }

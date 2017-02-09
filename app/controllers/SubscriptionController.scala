@@ -18,38 +18,70 @@ package controllers
 
 import auth.AuthorisedActions
 import javax.inject.{Inject, Singleton}
-import models.ExceptionResponse
+
+import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel}
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent}
-import services.DESService
+import play.api.mvc.{Action, AnyContent, Result}
+import services.RegistrationSubscriptionService
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
-@Singleton
-class SubscriptionController @Inject()(actions: AuthorisedActions, dESService: DESService) extends BaseController {
 
-  def subscribeUser(nino: Nino)(implicit hc: HeaderCarrier): Future[String] = dESService.subscribeUser(nino.nino)
+class SubscriptionController @Inject()(actions: AuthorisedActions, registrationSubscriptionService: RegistrationSubscriptionService) extends BaseController {
 
-  def subscribeResidentIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
 
+  def subscribeKnownIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
     Try(Nino(nino)) match {
       case Success(value) => actions.authorisedResidentIndividualAction {
-        case true => subscribeUser(value).map {
-          case reference => Ok(Json.toJson(reference))
-        } recoverWith {
-          case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
-        }
-        case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
+        case true => authorisedKnownIndividualAction(value)
+        case false => unauthorisedAction
       }
-      case _ => Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
+      case Failure(value) => unauthorisedAction
+    }
+  }
+
+  def subscribeNonResidentNinoIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
+    Try(Nino(nino)) match {
+      case Success(value) => actions.authorisedNonResidentIndividualAction {
+        case true => authorisedKnownIndividualAction(value)
+        case false => unauthorisedAction
+      }
+      case Failure(value) => unauthorisedAction
     }
   }
 
   def subscribeCompany(): Action[AnyContent] = TODO
 
+  def subscribeGhostIndividual(): Action[AnyContent] = Action.async { implicit request =>
+    Try(request.body.asJson.get.as[UserFactsModel]) match {
+      case Success(value) => actions.authorisedNonResidentIndividualAction {
+        case true => authorisedGhostIndividualAction(value)
+        case false => unauthorisedAction
+      }
+      case Failure(value) => unauthorisedAction
+    }
+  }
+
+  def authorisedKnownIndividualAction(nino: Nino)(implicit hc: HeaderCarrier): Future[Result] = {
+    registrationSubscriptionService.subscribeKnownUser(nino.nino).map {
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
+    } recoverWith {
+      case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+    }
+  }
+
+  def authorisedGhostIndividualAction(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[Result] = {
+    registrationSubscriptionService.subscribeGhostUser(userFactsModel).map {
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
+    } recoverWith {
+      case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+    }
+  }
+
+  val unauthorisedAction = Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
 }
