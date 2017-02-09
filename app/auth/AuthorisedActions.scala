@@ -16,9 +16,7 @@
 
 package auth
 
-
 import javax.inject.{Inject, Singleton}
-
 import checks.{NonResidentIndividualCheck, ResidentIndividualCheck}
 import play.api.mvc.Result
 import services.AuthService
