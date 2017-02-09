@@ -54,6 +54,8 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
+  def subscribeCompany(): Action[AnyContent] = TODO
+
   def subscribeGhostIndividual(): Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
       case Success(value) => actions.authorisedNonResidentIndividualAction {
