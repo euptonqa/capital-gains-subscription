@@ -114,7 +114,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse()
       )
 
-      val result = await(testService.subscribe("fake sap", taxEnrolmentsBody))
+      val result = await(testService.subscribe(companySubmissionModel, taxEnrolmentsBody))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"

@@ -60,7 +60,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
     submissionModel match {
       case individual: SubscribeIndividualModel =>
-        Logger.warn("Made a post request to the stub with a subscribers sap of " + individual.sap)
+        Logger.warn("Made a post request to the stub with an individual subscribers sap of " + individual.sap)
 
         val requestUrl: String = s"$serviceUrl$serviceContext/individual/${individual.sap}/subscribe"
         val response = cPOST(requestUrl, Json.toJson(individual))
@@ -68,7 +68,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         handleResponse(response, auditMap, individual.sap)
 
       case company: CompanySubmissionModel =>
-        Logger.warn("Made a post request to the stub with a subscribers sap of " + company.sap.get)
+        Logger.warn("Made a post request to the stub with a company subscribers sap of " + company.sap.get)
 
         val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
         val response = cPOST(requestUrl, Json.toJson(company))

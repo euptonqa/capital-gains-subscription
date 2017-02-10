@@ -52,7 +52,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
   def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(companySubmissionModel.registeredAddress.get.postCode.get)
-      cgtRef <- subscribe(companySubmissionModel.sap.get, taxEnrolmentsBody)
+      cgtRef <- subscribe(companySubmissionModel, taxEnrolmentsBody)
     } yield cgtRef
   }
 
@@ -60,21 +60,26 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
     for {
       sap <- fetchDESResponse(sapResponse)
       subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
-      cgtRef <- fetchDESResponse(subscribeResponse)
-      enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(taxEnrolmentsBody))
-      issuerResponse <- fetchTaxEnrolmentsResponse(enrolmentIssuerRequest)
-      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(taxEnrolmentSubscriberBody(sap)))
-      subscriberResponse <- fetchTaxEnrolmentsResponse(enrolmentSubscriberRequest)
+      cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, sap)
     } yield cgtRef
   }
 
-  private[services] def subscribe(sap: String, taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
+  private[services] def subscribe(companySubmissionModel: CompanySubmissionModel,
+                                  taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
-      subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
-      cgtRef <- fetchDESResponse(subscribeResponse)
+      subscribeResponse <- dESConnector.subscribe(companySubmissionModel)
+      cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, companySubmissionModel.sap.get)
+    } yield cgtRef
+  }
+
+  private def handleSubscriptionResponse(desResponse: DesResponse,
+                                         taxEnrolmentsBody: EnrolmentIssuerRequestModel,
+                                         sap: String)(implicit hc: HeaderCarrier): Future[String] = {
+    for {
+      cgtRef <- fetchDESResponse(desResponse)
       enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(taxEnrolmentsBody))
       issuerResponse <- fetchTaxEnrolmentsResponse(enrolmentIssuerRequest)
-      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(taxEnrolmentSubscriberBody(sap)))
+      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef,Json.toJson(taxEnrolmentSubscriberBody(sap)))
       subscriberResponse <- fetchTaxEnrolmentsResponse(enrolmentSubscriberRequest)
     } yield cgtRef
   }
