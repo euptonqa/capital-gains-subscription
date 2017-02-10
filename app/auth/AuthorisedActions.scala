@@ -16,6 +16,7 @@
 
 package auth
 
+import checks.{NonResidentIndividualCheck, ResidentIndividualCheck, OrganisationCheck}
 import javax.inject.{Inject, Singleton}
 import checks.{NonResidentIndividualCheck, ResidentIndividualCheck}
 import play.api.mvc.Result
@@ -48,4 +49,11 @@ class AuthorisedActions @Inject()(authService: AuthService) {
     } yield result
   }
 
+  def authorisedOrganisationAction(action: Boolean => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    for {
+      authority <- authService.getAuthority()
+      authorised <- OrganisationCheck.check(authority)
+      result <- createAuthorisedAction(action, authorised)
+    } yield result
+  }
 }

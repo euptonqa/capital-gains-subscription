@@ -19,7 +19,7 @@ package controllers
 import auth.AuthorisedActions
 import javax.inject.{Inject, Singleton}
 
-import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel}
+import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel, CompanySubmissionModel}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
 import services.RegistrationSubscriptionService
@@ -54,7 +54,15 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  def subscribeCompany(): Action[AnyContent] = TODO
+  def subscribeCompany(): Action[AnyContent] = Action.async { implicit request =>
+    Try(request.body.asJson.get.as[CompanySubmissionModel]) match {
+      case Success(value) if validOrganisationSubmission(value) => actions.authorisedOrganisationAction {
+        case true => authorisedOrganisationIndividualAction(value)
+        case false => unauthorisedAction
+      }
+      case _ => unauthorisedAction
+    }
+  }
 
   def subscribeGhostIndividual(): Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
@@ -81,6 +89,17 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
       case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
     }
   }
+
+  def authorisedOrganisationIndividualAction(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[Result] = {
+    registrationSubscriptionService.subscribeOrganisationUser(companySubmissionModel).map {
+      reference => Ok(Json.toJson(reference))
+    } recoverWith {
+      case error => Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+    }
+  }
+
+  private def validOrganisationSubmission(model: CompanySubmissionModel): Boolean =
+    model.sap.nonEmpty && model.contactAddress.nonEmpty && model.registeredAddress.nonEmpty
 
   private val unauthorisedAction: Future[Result] = Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
   private val badRequest: Future[Result] = Future.successful(BadRequest(Json.toJson(ExceptionResponse(BAD_REQUEST, "Bad Request"))))
