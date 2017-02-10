@@ -207,7 +207,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
     }
 
     "the user is unauthorised" should {
-      lazy val controller = setupController("CGT123456", organisation, subscriptionSuccess = false)
+      lazy val controller = setupController("Error message", organisation, subscriptionSuccess = false)
       lazy val result = controller.subscribeNonResidentNinoIndividual("AA123456A")(FakeRequest("POST", ""))
 
       "return a response" which {
@@ -229,8 +229,8 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
     }
 
     "the controller was not passed a valid nino" should {
-      lazy val controller = setupController("AAAAAAA", individual, subscriptionSuccess = false)
-      lazy val result = controller.subscribeNonResidentNinoIndividual("AA123456")(FakeRequest("POST", ""))
+      lazy val controller = setupController("CGT123456", individual, subscriptionSuccess = false)
+      lazy val result = controller.subscribeNonResidentNinoIndividual("AAAAAAAA")(FakeRequest("POST", ""))
 
       "return a response" which {
         val data = contentAsString(result)
