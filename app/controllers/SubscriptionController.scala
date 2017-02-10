@@ -78,7 +78,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     registrationSubscriptionService.subscribeKnownUser(nino.nino).map {
       reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
-      case error => internalServerError(error)
+      case error => returnInternalServerError(error)
     }
   }
 
@@ -86,7 +86,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     registrationSubscriptionService.subscribeGhostUser(userFactsModel).map {
       reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
-      case error => internalServerError(error)
+      case error => returnInternalServerError(error)
     }
   }
 
@@ -94,7 +94,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     registrationSubscriptionService.subscribeOrganisationUser(companySubmissionModel).map {
       reference => Ok(Json.toJson(reference))
     } recoverWith {
-      case error => internalServerError(error)
+      case error => returnInternalServerError(error)
     }
   }
 
@@ -103,6 +103,6 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
 
   private val unauthorisedAction: Future[Result] = Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
   private val badRequest: Future[Result] = Future.successful(BadRequest(Json.toJson(ExceptionResponse(BAD_REQUEST, "Bad Request"))))
-  private def internalServerError(error: Throwable): Future[Result] =
+  private def returnInternalServerError(error: Throwable): Future[Result] =
     Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
 }
