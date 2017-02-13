@@ -20,12 +20,16 @@ import models.AuthorisationDataModel
 
 import scala.concurrent.Future
 
-object NonResidentIndividualCheck {
-
+class IndividualCheck(confidenceLevel: Int) {
   def check(authorisationDataModel: Option[AuthorisationDataModel]): Future[Boolean] = {
     authorisationDataModel match {
-      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => Future.successful(confidence.level >= 50)
+      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => Future.successful(confidence.level >= confidenceLevel)
       case _ => Future.successful(false)
     }
   }
 }
+
+object NonResidentIndividualCheck extends IndividualCheck(50)
+
+object ResidentIndividualCheck extends IndividualCheck(200)
+

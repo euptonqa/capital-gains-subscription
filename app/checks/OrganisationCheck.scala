@@ -20,11 +20,11 @@ import models.AuthorisationDataModel
 
 import scala.concurrent.Future
 
-object ResidentIndividualCheck {
+object OrganisationCheck {
 
   def check(authorisationDataModel: Option[AuthorisationDataModel]): Future[Boolean] = {
     authorisationDataModel match {
-      case Some(AuthorisationDataModel("Individual", confidence, "strong")) => Future.successful(confidence.level >= 200)
+      case Some(AuthorisationDataModel("Organisation", _, _)) => Future.successful(true)
       case _ => Future.successful(false)
     }
   }

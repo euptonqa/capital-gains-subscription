@@ -17,7 +17,7 @@
 package services
 
 import connectors._
-import models.{EnrolmentIssuerRequestModel, EnrolmentSubscriberRequestModel, Identifier, UserFactsModel}
+import models._
 import org.mockito.ArgumentMatchers
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
@@ -58,6 +58,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
   val userFactsModel = UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK")
   val taxEnrolmentsBody = EnrolmentIssuerRequestModel("", Identifier("", ""))
+  val companySubmissionModel = CompanySubmissionModel(Some("123456789"), None, Some(CompanyAddressModel(None, None, None, None, Some(""), None)))
 
   "Calling RegistrationSubscriptionService .taxEnrolmentIssuerKnownUserBody" should {
 
@@ -101,6 +102,19 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       val result = await(testService.subscribe(SuccessDesResponse(Json.toJson("fake sap")), taxEnrolmentsBody))
+
+      "return CGT ref" in {
+        result shouldBe "fake cgt ref"
+      }
+    }
+
+    "with an sap instead of a DesResponse" should {
+      val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
+        SuccessTaxEnrolmentsResponse(),
+        SuccessTaxEnrolmentsResponse()
+      )
+
+      val result = await(testService.subscribe(companySubmissionModel, taxEnrolmentsBody))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"
@@ -233,6 +247,41 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
         val ex = intercept[Exception] {
           await(testService.subscribeGhostUser(userFactsModel))
+        }
+
+        "throw an exception with error message" in {
+          ex.getMessage shouldBe "error message"
+        }
+      }
+    }
+
+    "Calling RegistrationSubscriptionService .subscribeOrganisationUser" when {
+
+      "with a valid request" should {
+
+        val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
+          SuccessTaxEnrolmentsResponse(),
+          SuccessTaxEnrolmentsResponse(),
+          Some(SuccessDesResponse(Json.toJson("sap")))
+        )
+
+        val result = await(testService.subscribeOrganisationUser(companySubmissionModel))
+
+        "return CGT ref" in {
+          result shouldBe "fake cgt ref"
+        }
+      }
+
+      "with an invalid request" should {
+
+        val testService = setupMock(InvalidDesRequest("error message"),
+          SuccessTaxEnrolmentsResponse(),
+          SuccessTaxEnrolmentsResponse(),
+          Some(InvalidDesRequest("error message"))
+        )
+
+        val ex = intercept[Exception] {
+          await(testService.subscribeOrganisationUser(companySubmissionModel))
         }
 
         "throw an exception with error message" in {

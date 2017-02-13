@@ -56,27 +56,40 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
-  def subscribe(subscribeIndividualModel: SubscribeIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+  def subscribe(submissionModel: Any)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
-    Logger.warn("Made a post request to the stub with a subscribers sap of " + subscribeIndividualModel.sap)
+    submissionModel match {
+      case individual: SubscribeIndividualModel =>
+        Logger.warn("Made a post request to the stub with an individual subscribers sap of " + individual.sap)
 
-    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeIndividualModel.sap}/subscribe"
-    val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
-    val auditMap: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
+        val requestUrl: String = s"$serviceUrl$serviceContext/individual/${individual.sap}/subscribe"
+        val response = cPOST(requestUrl, Json.toJson(individual))
+        val auditMap: Map[String, String] = Map("Safe Id" -> individual.sap, "Url" -> requestUrl)
+        handleResponse(response, auditMap, individual.sap)
 
-    val ackReq = subscribeIndividualModel.sap
+      case company: CompanySubmissionModel =>
+        Logger.warn("Made a post request to the stub with a company subscribers sap of " + company.sap.get)
+
+        val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
+        val response = cPOST(requestUrl, Json.toJson(company))
+        val auditMap: Map[String, String] = Map("Safe Id" -> company.sap.get, "Url" -> requestUrl)
+        handleResponse(response, auditMap, company.sap.get)
+    }
+  }
+
+  def handleResponse(response: Future[HttpResponse], auditMap: Map[String, String], reference: String)(implicit hc: HeaderCarrier): Future[DesResponse] = {
     response map { r =>
       r.status match {
         case OK =>
-          Logger.info(s"Successful DES submission for $ackReq")
+          Logger.info(s"Successful DES submission for $reference")
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case CONFLICT =>
-          Logger.warn(s"Duplicate submission for $ackReq has been reported")
+          Logger.warn(s"Duplicate submission for $reference has been reported")
           logger.audit(transactionDESSubscribe, conflictAuditMap(auditMap, r), eventTypeConflict)
           SuccessDesResponse(r.json)
         case ACCEPTED =>
-          Logger.info(s"Accepted DES submission for $ackReq")
+          Logger.info(s"Accepted DES submission for $reference")
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case BAD_REQUEST =>
@@ -87,19 +100,19 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       }
     } recover {
       case _: NotFoundException =>
-        Logger.warn(s"Not found for $ackReq")
+        Logger.warn(s"Not found for $reference")
         logger.audit(transactionDESSubscribe, auditMap, eventTypeNotFound)
         NotFoundDesResponse
       case _: InternalServerException =>
-        Logger.warn(s"Internal server error for $ackReq")
+        Logger.warn(s"Internal server error for $reference")
         logger.audit(transactionDESSubscribe, auditMap, eventTypeInternalServerError)
         DesErrorResponse
       case _: BadGatewayException =>
-        Logger.warn(s"Bad gateway status for $ackReq")
+        Logger.warn(s"Bad gateway status for $reference")
         logger.audit(transactionDESSubscribe, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.toString} for $ackReq")
+        Logger.warn(s"Exception of ${ex.toString} for $reference")
         logger.audit(transactionDESSubscribe, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
