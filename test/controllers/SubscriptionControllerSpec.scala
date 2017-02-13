@@ -34,8 +34,7 @@ import scala.concurrent.Future
 
 class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFakeApplication {
 
-  def setupController(response: String, authority: AuthorisationDataModel, subscriptionSuccess: Boolean,
-                      user: String = "Individual"): SubscriptionController = {
+  def setupController(response: String, authority: AuthorisationDataModel, subscriptionSuccess: Boolean): SubscriptionController = {
 
     val mockService = mock[AuthService]
     val mockRegSubService = mock[RegistrationSubscriptionService]
@@ -133,7 +132,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
       }
     }
 
-    "the controller was not passed a valid nino" should {
+    "the controller is not passed a valid nino" should {
       lazy val controller = setupController("CGT123456", individual, subscriptionSuccess = false)
       lazy val result = controller.subscribeKnownIndividual("AAAAAAAA")(FakeRequest("POST", ""))
 
@@ -228,7 +227,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
       }
     }
 
-    "the controller was not passed a valid nino" should {
+    "the controller is not passed a valid nino" should {
       lazy val controller = setupController("CGT123456", individual, subscriptionSuccess = false)
       lazy val result = controller.subscribeNonResidentNinoIndividual("AAAAAAAA")(FakeRequest("POST", ""))
 
