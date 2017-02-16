@@ -131,7 +131,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       val response = Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid))))
       val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
-      result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
+      result shouldBe DuplicateDesResponse
     }
 
     "return a BAD_REQUEST with an invalid safeId and a valid reference" should {
@@ -270,12 +270,12 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     "for a conflicted request" should {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
+        .thenReturn(Future.successful(HttpResponse(CONFLICT)))
 
       val result = TestDESConnector.obtainSAPGhost(details)
 
       "return success" in {
-        await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+        await(result) shouldBe DuplicateDesResponse
       }
     }
 
@@ -374,11 +374,11 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
         ArgumentMatchers.any(), ArgumentMatchers.any())).
-        thenReturn(Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("bp" -> "1234567")))))
+        thenReturn(Future.successful(HttpResponse(CONFLICT)))
 
       val result = TestDESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
 
-      await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
+      await(result) shouldBe DuplicateDesResponse
     }
 
 
