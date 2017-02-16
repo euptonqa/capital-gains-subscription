@@ -33,7 +33,15 @@ import scala.concurrent.Future
 class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
-    Logger.warn("Issuing a call to DES (stub) to register and subscribe")
+    Logger.info("Issuing a call to DES (stub) to register and subscribe")
+
+    def handleResponse(): Future[DesResponse] = {
+      dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino))).flatMap(response => response match {
+        case DuplicateDesResponse => //TODO add in connector call to get the SAP
+        case _ => Future.successful(response)
+      })
+    }
+
     for {
       sapResponse <- dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
       taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
