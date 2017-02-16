@@ -42,6 +42,8 @@ case object DesErrorResponse extends DesResponse
 
 case class InvalidDesRequest(message: String) extends DesResponse
 
+case object DuplicateDesResponse extends DesResponse
+
 @Singleton
 class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) extends HttpErrorFunctions with ServicesConfig {
 
@@ -51,7 +53,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val environment = "test"
   val token = "des"
   val obtainSAPUrl = "/register"
-  val obtainSAPUrlGhost = "/non-resident/individual/register" //TODO: Add routing in dynamic stub
+  val obtainSAPUrlGhost = "/non-resident/individual/register"
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
@@ -85,9 +87,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case CONFLICT =>
-          Logger.warn(s"Duplicate submission for $reference has been reported")
+          Logger.warn("Error Conflict: SAP Number already in existence")
           logger.audit(transactionDESSubscribe, conflictAuditMap(auditMap, r), eventTypeConflict)
-          SuccessDesResponse(r.json)
+          DuplicateDesResponse
         case ACCEPTED =>
           Logger.info(s"Accepted DES submission for $reference")
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
@@ -127,6 +129,11 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
   }
 
+  @inline
+  private def cGET[O](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier) = {
+    http.GET[O](url, headers)(rds, hc = createHeaderCarrier(hc))
+  }
+
   private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
     headerCarrier.
       withExtraHeaders("Environment" -> urlHeaderEnvironment).
@@ -158,9 +165,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESObtainSAP, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case CONFLICT =>
-            Logger.info("ConflictTransactionDESObtainSAP Number already in existence")
+            Logger.warn("Error Conflict: SAP Number already in existence")
             logger.audit(transactionDESObtainSAP, conflictAuditMap(auditMap, r), eventTypeConflict)
-            SuccessDesResponse(r.json)
+            DuplicateDesResponse
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
@@ -204,9 +211,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case CONFLICT =>
-            Logger.info("ConflictTransactionDESObtainSAP Number already in existence")
+            Logger.warn("Error Conflict: SAP Number already in existence")
             logger.audit(transactionDESObtainSAPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
-            SuccessDesResponse(r.json)
+            DuplicateDesResponse
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
@@ -229,6 +236,47 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       case ex: Exception =>
         Logger.warn(s"Exception of ${ex.toString} transactionDESObtainSAP number")
         logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeGeneric)
+        DesErrorResponse
+    }
+  }
+
+  def getExistingSap(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+    val getSubscriptionUrl = s"$serviceUrl/taxpayers/${registerIndividualModel.nino}/subscription"
+    val response = cGET[HttpResponse](getSubscriptionUrl)
+    val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> getSubscriptionUrl)
+    response map {
+      r =>
+        r.status match {
+          case OK =>
+            Logger.info("SuccessTransactionDESGetExistingSAP number")
+            logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case ACCEPTED =>
+            Logger.info("AcceptTransactionDESGetExistingSAP number")
+            logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case BAD_REQUEST =>
+            val message = (r.json \ "reason").as[String]
+            Logger.warn(s"Error with the request $message")
+            logger.audit(transactionDESGetExistingSAP, failureAuditMap(auditMap, r), eventTypeFailure)
+            InvalidDesRequest(message)
+        }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn("Not found exception transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeNotFound)
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn("Internal server error transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeInternalServerError)
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn("Bad gateway status transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeBadGateway)
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
   }
