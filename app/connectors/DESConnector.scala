@@ -239,7 +239,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   def getExistingSap(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-    val getSubscriptionUrl = s"$serviceUrl/taxpayers/${registerIndividualModel.nino}/subscription"
+    val getSubscriptionUrl = s"$serviceUrl/registration/details?nino=${registerIndividualModel.nino}"
     val response = cGET[HttpResponse](getSubscriptionUrl)
     val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> getSubscriptionUrl)
     response map {
