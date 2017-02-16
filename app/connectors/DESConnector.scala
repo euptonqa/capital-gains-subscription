@@ -42,6 +42,8 @@ case object DesErrorResponse extends DesResponse
 
 case class InvalidDesRequest(message: String) extends DesResponse
 
+case object DuplicateDesResponse extends DesResponse
+
 @Singleton
 class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) extends HttpErrorFunctions with ServicesConfig {
 
@@ -51,7 +53,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val environment = "test"
   val token = "des"
   val obtainSAPUrl = "/register"
-  val obtainSAPUrlGhost = "/non-resident/individual/register" //TODO: Add routing in dynamic stub
+  val obtainSAPUrlGhost = "/non-resident/individual/register"
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
@@ -85,9 +87,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case CONFLICT =>
-          Logger.warn(s"Duplicate submission for $reference has been reported")
+          Logger.warn("Error Conflict: SAP Number already in existence")
           logger.audit(transactionDESSubscribe, conflictAuditMap(auditMap, r), eventTypeConflict)
-          SuccessDesResponse(r.json)
+          DuplicateDesResponse
         case ACCEPTED =>
           Logger.info(s"Accepted DES submission for $reference")
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
@@ -163,9 +165,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESObtainSAP, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case CONFLICT =>
-            Logger.info("ConflictTransactionDESObtainSAP Number already in existence")
+            Logger.warn("Error Conflict: SAP Number already in existence")
             logger.audit(transactionDESObtainSAP, conflictAuditMap(auditMap, r), eventTypeConflict)
-            SuccessDesResponse(r.json)
+            DuplicateDesResponse
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
@@ -209,9 +211,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case CONFLICT =>
-            Logger.info("ConflictTransactionDESObtainSAP Number already in existence")
+            Logger.warn("Error Conflict: SAP Number already in existence")
             logger.audit(transactionDESObtainSAPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
-            SuccessDesResponse(r.json)
+            DuplicateDesResponse
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")
