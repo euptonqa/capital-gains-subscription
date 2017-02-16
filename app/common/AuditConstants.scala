@@ -21,6 +21,7 @@ object AuditConstants {
   val transactionDESSubscribe = "CGT DES Subscribe"
   val transactionDESObtainSAP = "CGT DES Obtain SAP"
   val transactionDESObtainSAPGhost = "CGT DES Obtain SAP Ghost"
+  val transactionDESGetExistingSAP = "CGT DES Get Subscription"
   val transactionTaxEnrolmentsIssuer = "CGT Tax Enrolments Issuer"
   val transactionTaxEnrolmentsSubscribe = "CGT Tax Enrolments Subscribe"
   val eventTypeFailure: String = "CGTFailure"

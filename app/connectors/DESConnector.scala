@@ -128,7 +128,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   @inline
-  private def cGET[O](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[O], hc: HeaderCarrier) = {
+  private def cGET[O](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier) = {
     http.GET[O](url, headers)(rds, hc = createHeaderCarrier(hc))
   }
 
@@ -238,8 +238,45 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  def getExistingSap(registerIndividualModel: RegisterIndividualModel): DesResponse = {
-    ???
+  def getExistingSap(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+    val getSubscriptionUrl = s"$serviceUrl/taxpayers/${registerIndividualModel.nino}/subscription"
+    val response = cGET[HttpResponse](getSubscriptionUrl)
+    val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> getSubscriptionUrl)
+    response map {
+      r =>
+        r.status match {
+          case OK =>
+            Logger.info("SuccessTransactionDESGetExistingSAP number")
+            logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case ACCEPTED =>
+            Logger.info("AcceptTransactionDESGetExistingSAP number")
+            logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
+            SuccessDesResponse(r.json)
+          case BAD_REQUEST =>
+            val message = (r.json \ "reason").as[String]
+            Logger.warn(s"Error with the request $message")
+            logger.audit(transactionDESGetExistingSAP, failureAuditMap(auditMap, r), eventTypeFailure)
+            InvalidDesRequest(message)
+        }
+    } recover {
+      case ex: NotFoundException =>
+        Logger.warn("Not found exception transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeNotFound)
+        NotFoundDesResponse
+      case ex: InternalServerException =>
+        Logger.warn("Internal server error transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeInternalServerError)
+        DesErrorResponse
+      case ex: BadGatewayException =>
+        Logger.warn("Bad gateway status transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeBadGateway)
+        DesErrorResponse
+      case ex: Exception =>
+        Logger.warn(s"Exception of ${ex.toString} transactionDESGetExistingSAP number")
+        logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeGeneric)
+        DesErrorResponse
+    }
   }
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
