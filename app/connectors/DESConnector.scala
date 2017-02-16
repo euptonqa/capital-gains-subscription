@@ -129,6 +129,11 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = createHeaderCarrier(hc))
   }
 
+  @inline
+  private def cGET[O](url: String, headers: Seq[(String, String)])(implicit rds: HttpReads[O], hc: HeaderCarrier) = {
+    http.GET[O](url, headers)(rds, hc = createHeaderCarrier(hc))
+  }
+
   private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
     headerCarrier.
       withExtraHeaders("Environment" -> urlHeaderEnvironment).
@@ -233,6 +238,10 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
+  }
+
+  def getExistingSap(registerIndividualModel: RegisterIndividualModel): DesResponse = {
+    ???
   }
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
