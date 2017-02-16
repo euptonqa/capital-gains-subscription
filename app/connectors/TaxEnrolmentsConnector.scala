@@ -74,7 +74,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
     val response = cPUT(putUrl, body)
     val auditMap: Map[String, String] = Map("Subscription Id" -> subscriptionId, "Url" -> putUrl)
 
-    Logger.warn("Made a post request to the tax enrolments issuer stub with a subscription id of" + subscriptionId)
+    Logger.warn("Made a post request to the tax enrolments issuer stub with a subscription id of " + subscriptionId)
 
     response map { r =>
       r.status match {
@@ -103,12 +103,12 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
     val response = cPUT(putUrl, body)
     val auditMap: Map[String, String] = Map("Subscription Id" -> subscriptionId, "Url" -> putUrl)
 
-    Logger.warn("Made a post request to the tax enrolments subscriber stub with a subscription id of" + subscriptionId)
+    Logger.warn("Made a post request to the tax enrolments subscriber stub with a subscription id of " + subscriptionId)
 
     response map { r =>
       r.status match {
         case NO_CONTENT =>
-          Logger.info(s"Successful Tax Enrolments subscription to Url $putUrl")
+          Logger.warn(s"Successful Tax Enrolments subscription to Url $putUrl")
           logger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsSubscribe,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)

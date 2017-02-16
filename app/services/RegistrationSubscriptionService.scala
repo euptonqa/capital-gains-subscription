@@ -33,7 +33,7 @@ import scala.concurrent.Future
 class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
-    Logger.warn("Issuing a call to DES (stub) to register and subscribe")
+    Logger.warn("Issuing a call to DES (stub) to register and subscribe known user")
     for {
       sapResponse <- dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
       taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
@@ -42,6 +42,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
   }
 
   def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
+    Logger.warn("Issuing a call to DES (stub) to register and subscribe ghost user")
     for {
       sapResponse <- dESConnector.obtainSAPGhost(userFactsModel)
       taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(userFactsModel.postCode)
@@ -50,6 +51,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
   }
 
   def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
+    Logger.warn("Issuing a call to DES (stub) to register and subscribe organisation user")
     for {
       taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(companySubmissionModel.registeredAddress.get.postCode.get)
       cgtRef <- subscribe(companySubmissionModel, taxEnrolmentsBody)
@@ -79,7 +81,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
       cgtRef <- fetchDESResponse(desResponse)
       enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(taxEnrolmentsBody))
       issuerResponse <- fetchTaxEnrolmentsResponse(enrolmentIssuerRequest)
-      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef,Json.toJson(taxEnrolmentSubscriberBody(sap)))
+      enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(taxEnrolmentSubscriberBody(sap)))
       subscriberResponse <- fetchTaxEnrolmentsResponse(enrolmentSubscriberRequest)
     } yield cgtRef
   }
