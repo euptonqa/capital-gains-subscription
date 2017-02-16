@@ -30,20 +30,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
+class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
+
     Logger.info("Issuing a call to DES (stub) to register and subscribe")
 
+    val filterDuplicates: DesResponse => Future[DesResponse] = {
+      case DuplicateDesResponse =>
+        Logger.info("Making a request for users sap as nino used already has a BP entry")
+        desConnector.getExistingSap(RegisterIndividualModel(Nino(nino)))
+      case x => Future.successful(x)
+    }
+
     def handleResponse(): Future[DesResponse] = {
-      dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino))).flatMap(response => response match {
-        case DuplicateDesResponse => //TODO add in connector call to get the SAP
-        case _ => Future.successful(response)
-      })
+      desConnector.obtainSAP(RegisterIndividualModel(Nino(nino))).flatMap(filterDuplicates)
     }
 
     for {
-      sapResponse <- dESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
+      sapResponse <- handleResponse()
       taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
       cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
@@ -51,7 +56,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
 
   def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
-      sapResponse <- dESConnector.obtainSAPGhost(userFactsModel)
+      sapResponse <- desConnector.obtainSAPGhost(userFactsModel)
       taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(userFactsModel.postCode)
       cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
@@ -67,7 +72,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
   private[services] def subscribe(sapResponse: DesResponse, taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       sap <- fetchDESResponse(sapResponse)
-      subscribeResponse <- dESConnector.subscribe(SubscribeIndividualModel(sap))
+      subscribeResponse <- desConnector.subscribe(SubscribeIndividualModel(sap))
       cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, sap)
     } yield cgtRef
   }
@@ -75,7 +80,7 @@ class RegistrationSubscriptionService @Inject()(dESConnector: DESConnector, taxE
   private[services] def subscribe(companySubmissionModel: CompanySubmissionModel,
                                   taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
-      subscribeResponse <- dESConnector.subscribe(companySubmissionModel)
+      subscribeResponse <- desConnector.subscribe(companySubmissionModel)
       cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, companySubmissionModel.sap.get)
     } yield cgtRef
   }
