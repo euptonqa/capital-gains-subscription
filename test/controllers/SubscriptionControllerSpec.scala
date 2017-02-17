@@ -381,10 +381,10 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
             contentType(result) shouldBe Some("application/json")
           }
 
-          "has a string representing the CGT reference" in {
+          "has a SubscriptionReferenceModel representing the CGT reference" in {
             val data = contentAsString(result)
             val json = Json.parse(data)
-            json.as[String] shouldBe "CGT123456"
+            json.as[SubscriptionReferenceModel] shouldBe SubscriptionReferenceModel("CGT123456")
           }
         }
       }

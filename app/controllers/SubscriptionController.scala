@@ -57,7 +57,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
   def subscribeCompany(): Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[CompanySubmissionModel]) match {
       case Success(value) if validOrganisationSubmission(value) => actions.authorisedOrganisationAction {
-        case true => authorisedOrganisationIndividualAction(value)
+        case true => authorisedOrganisationAction(value)
         case false => unauthorisedAction
       }
       case _ => unauthorisedAction
@@ -90,9 +90,9 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  def authorisedOrganisationIndividualAction(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[Result] = {
+  def authorisedOrganisationAction(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeOrganisationUser(companySubmissionModel).map {
-      reference => Ok(Json.toJson(reference))
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
       case error => returnInternalServerError(error)
     }
