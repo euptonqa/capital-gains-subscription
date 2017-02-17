@@ -55,4 +55,6 @@ class AuthorisedActions @Inject()(authService: AuthService) {
       result <- createAuthorisedAction(action, authorised)
     } yield result
   }
+
+
 }

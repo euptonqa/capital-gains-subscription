@@ -18,7 +18,8 @@ package connectors
 
 import audit.Logging
 import javax.inject.{Inject, Singleton}
-import common.AuditConstants
+
+import common.{AuditConstants, AuditConstantsAgent}
 import common.Keys.TaxEnrolmentsKeys
 import config.{ApplicationConfig, WSHttp}
 import play.api.Logger
@@ -127,7 +128,66 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, logger: Log
     }
   }
 
-  private[connectors] def recoverRequest(putUrl: String, ex: Throwable, auditMap: Map[String, String], auditTransactionName: String)
+  def getSubscriberAgentResponse(arn: String, body: JsValue)(implicit headerCarrier: HeaderCarrier): Future[TaxEnrolmentsResponse] = {
+    val putUrl = s"""$serviceUrl$serviceContext/subscriptions/$arn/${TaxEnrolmentsKeys.subscriber}"""
+    val response = cPUT(putUrl, body)
+    val auditMap: Map[String, String] = Map("Agent Reference Number" -> arn, "Url" -> putUrl)
+
+    Logger.warn("Made a post request to the tax enrolments subscriber stub with an ARN of" + arn)
+
+    response map { r =>
+      r.status match {
+        case NO_CONTENT =>
+          Logger.info(s"Successful Tax Enrolments subscription to Url $putUrl")
+          logger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuerAgent,
+            detail = auditMap,
+            eventType = AuditConstantsAgent.eventTypeSuccess)
+          SuccessTaxEnrolmentsResponse()
+
+        case BAD_REQUEST | UNAUTHORIZED =>
+          val message = (r.json \ "reason").as[String]
+          Logger.warn(s"Tax Enrolments reported an error with the request $message to Url $putUrl")
+          logger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuerAgent,
+            detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
+            eventType = AuditConstantsAgent.eventTypeFailure)
+          InvalidTaxEnrolmentsRequest(message)
+      }
+    } recover {
+      case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsSubscribe, AuditConstantsAgent)
+    }
+  }
+
+  def getIssuerAgentResponse(arn: String, body: JsValue)(implicit hc: HeaderCarrier): Future[TaxEnrolmentsResponse] = {
+    val putUrl = s"""$serviceUrl$serviceContext/subscriptions/$arn/${TaxEnrolmentsKeys.issuer}"""
+    val response = cPUT(putUrl, body)
+    val auditMap: Map[String, String] = Map("Agent Reference Number" -> arn, "Url" -> putUrl)
+
+    Logger.warn("Made a post request to the tax enrolments issuer stub with an ARN of" + arn)
+
+    response map { r =>
+      r.status match {
+        case NO_CONTENT =>
+          Logger.info(s"Successful Tax Enrolments issue to Url $putUrl")
+          logger.audit(transactionName = AuditConstantsAgent.transactionTaxEnrolmentsIssuer,
+            detail = auditMap,
+            eventType = AuditConstantsAgent.eventTypeSuccess)
+          SuccessTaxEnrolmentsResponse()
+
+        case BAD_REQUEST =>
+          val message = (r.json \ "reason").as[String]
+          Logger.warn(s"Tax Enrolments reported an error with the request $message to Url $putUrl")
+          logger.audit(transactionName = AuditConstantsAgent.transactionTaxEnrolmentsIssuer,
+            detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
+            eventType = AuditConstantsAgent.eventTypeFailure)
+          InvalidTaxEnrolmentsRequest(message)
+      }
+    } recover {
+      case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsIssuer, AuditConstantsAgent)
+    }
+  }
+
+  private[connectors] def recoverRequest(putUrl: String, ex: Throwable, auditMap: Map[String, String],
+                                         auditTransactionName: String, constants: AuditConstants = AuditConstants)
                                         (implicit headerCarrier: HeaderCarrier): TaxEnrolmentsResponse = {
     ex match {
       case _: InternalServerException =>
