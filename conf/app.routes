@@ -6,3 +6,4 @@ POST       /subscribe/company                       @controllers.SubscriptionCon
 POST       /subscribe/resident/individual           @controllers.SubscriptionController.subscribeKnownIndividual(nino: String)
 POST       /subscribe/non-resident/individual-nino  @controllers.SubscriptionController.subscribeNonResidentNinoIndividual(nino: String)
 POST       /subscribe/non-resident/individual       @controllers.SubscriptionController.subscribeGhostIndividual
+POST       /subscribe/agent                         @controllers.SubscriptionController.subscribeAgent()
