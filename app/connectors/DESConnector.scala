@@ -249,10 +249,6 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             Logger.info("SuccessTransactionDESGetExistingSAP number")
             logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
-          case ACCEPTED =>
-            Logger.info("AcceptTransactionDESGetExistingSAP number")
-            logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
-            SuccessDesResponse(r.json)
           case BAD_REQUEST =>
             val message = (r.json \ "reason").as[String]
             Logger.warn(s"Error with the request $message")

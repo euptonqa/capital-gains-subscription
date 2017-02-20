@@ -452,15 +452,6 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
     }
 
-    "return a SuccessDesResponse on an ACCEPTED response" in {
-      when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-        .thenReturn(Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("bp" -> "1234567")))))
-
-      val result = TestDESConnector.getExistingSap(RegisterIndividualModel(Nino(nino)))
-
-      await(result) shouldBe SuccessDesResponse(Json.obj("bp" -> "1234567"))
-    }
-
     "return an InvalidDesRequest on a BAD_REQUEST response" in {
       when(mockWSHttp.GET[HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
         .thenReturn(Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "etmp reason")))))
