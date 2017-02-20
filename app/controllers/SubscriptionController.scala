@@ -74,6 +74,8 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
+  val subscribeAgent = TODO
+
   def authorisedKnownIndividualAction(nino: Nino)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeKnownUser(nino.nino).map {
       reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
