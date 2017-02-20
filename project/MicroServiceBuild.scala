@@ -14,7 +14,7 @@ private object AppDependencies {
   import play.sbt.PlayImport._
   import play.core.PlayVersion
 
-  private val microserviceBootstrapVersion = "5.8.0"
+  private val microserviceBootstrapVersion = "5.11.0"
   private val playAuthVersion = "4.2.0"
   private val playHealthVersion = "2.0.0"
   private val playJsonLoggerVersion = "3.1.0"
@@ -51,7 +51,7 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
         "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % scope,
-        "org.mockito" % "mockito-core" % "2.2.29" % "test"
+        "org.mockito" % "mockito-core" % "2.6.2" % "test"
       )
     }.test
   }
