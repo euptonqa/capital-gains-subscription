@@ -120,7 +120,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getIssuerResponse("12345", jsBody))
 
       "return SuccessTaxEnrolmentsResponse with response body" in {
-        result shouldBe SuccessTaxEnrolmentsResponse()
+        result shouldBe SuccessTaxEnrolmentsResponse
       }
     }
 
@@ -221,7 +221,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberResponse("12345", jsBody))
 
       "return SuccessTaxEnrolmentsResponse with response body" in {
-        result shouldBe SuccessTaxEnrolmentsResponse()
+        result shouldBe SuccessTaxEnrolmentsResponse
       }
     }
 
@@ -292,7 +292,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
 
       "return SuccessTaxEnrolmentsResponse with response body" in {
-        result shouldBe SuccessTaxEnrolmentsResponse()
+        result shouldBe SuccessTaxEnrolmentsResponse
       }
     }
 
@@ -352,7 +352,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
 
       "return SuccessTaxEnrolmentsResponse with response body" in {
-        result shouldBe SuccessTaxEnrolmentsResponse()
+        result shouldBe SuccessTaxEnrolmentsResponse
       }
     }
 

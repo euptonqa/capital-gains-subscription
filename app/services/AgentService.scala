@@ -23,9 +23,15 @@ import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-class AgentEnrolmentService @Inject()(taxEnrolmentsConnector: TaxEnrolmentsConnector){
+class AgentService @Inject()(taxEnrolmentsConnector: TaxEnrolmentsConnector){
 
-  def enrolAgent(arn: String)(implicit hc: HeaderCarrier): Future[String] = {
+  def enrolAgent(arn: String)(implicit hc: HeaderCarrier): Future[Unit] = {
+//
+//    val agentModel =
+//
+//    val subscriberRequest = taxEnrolmentsConnector.getSubscriberAgentResponse(arn, )
+
+
     Future.successful("")
   }
 

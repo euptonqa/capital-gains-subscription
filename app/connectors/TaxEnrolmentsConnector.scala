@@ -33,7 +33,7 @@ import scala.concurrent.Future
 
 sealed trait TaxEnrolmentsResponse
 
-case class SuccessTaxEnrolmentsResponse() extends TaxEnrolmentsResponse
+case object SuccessTaxEnrolmentsResponse extends TaxEnrolmentsResponse
 
 case object TaxEnrolmentsErrorResponse extends TaxEnrolmentsResponse
 
@@ -87,7 +87,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessTaxEnrolmentsResponse()
+          SuccessTaxEnrolmentsResponse
 
         case BAD_REQUEST =>
           val message = (r.json \ "reason").as[String]
@@ -116,7 +116,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsSubscribe,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessTaxEnrolmentsResponse()
+          SuccessTaxEnrolmentsResponse
 
         case BAD_REQUEST | UNAUTHORIZED =>
           val message = (r.json \ "reason").as[String]
@@ -145,7 +145,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuerAgent,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessTaxEnrolmentsResponse()
+          SuccessTaxEnrolmentsResponse
 
         case BAD_REQUEST | UNAUTHORIZED =>
           val message = (r.json \ "reason").as[String]
@@ -174,7 +174,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
-          SuccessTaxEnrolmentsResponse()
+          SuccessTaxEnrolmentsResponse
 
         case BAD_REQUEST =>
           val message = (r.json \ "reason").as[String]
