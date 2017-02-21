@@ -16,11 +16,11 @@
 
 package models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class AgentSubmissionModel (sap: String,
                                  arn: String)
 
 object AgentSubmissionModel {
-  implicit val formats = Json.format[AgentSubmissionModel]
+  implicit val formats: OFormat[AgentSubmissionModel] = Json.format[AgentSubmissionModel]
 }

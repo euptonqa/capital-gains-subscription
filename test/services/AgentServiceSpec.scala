@@ -17,6 +17,7 @@
 package services
 
 import connectors.{SuccessTaxEnrolmentsResponse, TaxEnrolmentsConnector, TaxEnrolmentsErrorResponse, TaxEnrolmentsResponse}
+import models.AgentSubmissionModel
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
@@ -27,6 +28,10 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.Future
 
 class AgentServiceSpec extends UnitSpec with OneAppPerSuite with MockitoSugar {
+
+  implicit val hc: HeaderCarrier = mock[HeaderCarrier]
+
+  val model: AgentSubmissionModel = AgentSubmissionModel("dummySap", "dummyArn")
 
   def setupService(issuerResponse: TaxEnrolmentsResponse, subscriberResponse: TaxEnrolmentsResponse): AgentService = {
 
@@ -41,15 +46,13 @@ class AgentServiceSpec extends UnitSpec with OneAppPerSuite with MockitoSugar {
     new AgentService(mockConnector)
   }
 
-  implicit val hc: HeaderCarrier = mock[HeaderCarrier]
-
   "Calling .enrolAgent" when {
 
     "subscriber and issuer return successes" should {
       lazy val service = setupService(SuccessTaxEnrolmentsResponse, SuccessTaxEnrolmentsResponse)
 
       "return a successful enrolment response" in {
-        lazy val result = service.enrolAgent("")
+        lazy val result = service.enrolAgent(model)
 
         await(result) shouldBe()
       }
@@ -60,7 +63,7 @@ class AgentServiceSpec extends UnitSpec with OneAppPerSuite with MockitoSugar {
 
       "throw an exception with Enrolment failed" in {
         lazy val ex = intercept[Exception] {
-          await(service.enrolAgent(""))
+          await(service.enrolAgent(model))
         }
 
         ex.getMessage shouldBe "Enrolment failed"
@@ -72,7 +75,7 @@ class AgentServiceSpec extends UnitSpec with OneAppPerSuite with MockitoSugar {
 
       "throw an exception with Enrolment failed" in {
         lazy val ex = intercept[Exception] {
-          await(service.enrolAgent(""))
+          await(service.enrolAgent(model))
         }
 
         ex.getMessage shouldBe "Enrolment failed"
@@ -84,7 +87,7 @@ class AgentServiceSpec extends UnitSpec with OneAppPerSuite with MockitoSugar {
 
       "throw an exception with Enrolment failed" in {
         lazy val ex = intercept[Exception] {
-          await(service.enrolAgent(""))
+          await(service.enrolAgent(model))
         }
 
         ex.getMessage shouldBe "Enrolment failed"
