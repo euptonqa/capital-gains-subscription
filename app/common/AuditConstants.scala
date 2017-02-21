@@ -16,26 +16,6 @@
 
 package common
 
-//trait AuditConstants {
-//  val transactionDESSubscribe: String
-//  val transactionDESObtainSAP: String
-//  val transactionDESObtainSAPGhost: String
-//  val transactionDESGetExistingSAP: String
-//  val transactionTaxEnrolmentsIssuer: String
-//  val transactionTaxEnrolmentsSubscribe: String
-//  val transactionTaxEnrolmentsIssuerAgent: String
-//  val transactionTaxEnrolmentsSubscribeAgent: String
-//  val eventTypeFailure: String
-//  val eventTypeSuccess: String
-//  val eventTypeConflict: String
-//
-//  val splunk = "SPLUNK AUDIT:\n"
-//  val eventTypeBadGateway: String = "BadGateway"
-//  val eventTypeNotFound: String = "NotFound"
-//  val eventTypeInternalServerError: String = "InternalServerError"
-//  val eventTypeGeneric: String = "UnexpectedError"
-//}
-
 object AuditConstants {
   val splunk = "SPLUNK AUDIT:\n"
 
@@ -55,17 +35,3 @@ object AuditConstants {
   val eventTypeNotFound: String = "NotFound"
   val eventTypeInternalServerError: String = "InternalServerError"
 }
-
-//object AuditConstantsAgent extends AuditConstants {
-//  override val transactionDESSubscribe = "Agent CGT DES Subscribe"
-//  override val transactionDESObtainSAP = "Agent CGT DES Obtain SAP"
-//  override val transactionDESObtainSAPGhost = "Agent CGT DES Obtain SAP Ghost"
-//  override val transactionDESGetExistingSAP = "Agent CGT DES Get Subscription"
-//  override val transactionTaxEnrolmentsIssuer = "Agent CGT Tax Enrolments Issuer"
-//  override val transactionTaxEnrolmentsSubscribe = "Agent CGT Tax Enrolments Subscribe"
-//  override val transactionTaxEnrolmentsIssuerAgent = "Agent CGT Agent Tax Enrolments Issuer"
-//  override val transactionTaxEnrolmentsSubscribeAgent = "Agent CGT Agent Tax Enrolments Subscribe"
-//  override val eventTypeFailure: String = "AgentCGTFailure"
-//  override val eventTypeSuccess: String = "AgentCGTSuccess"
-//  override val eventTypeConflict: String = "AgentCGTConflict"
-//}
