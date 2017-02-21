@@ -16,13 +16,13 @@
 
 package controllers
 
-import auth.AuthorisedActions
 import javax.inject.{Inject, Singleton}
 
-import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel, CompanySubmissionModel}
+import auth.AuthorisedActions
+import models._
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
-import services.RegistrationSubscriptionService
+import services.{AgentService, RegistrationSubscriptionService}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -32,7 +32,18 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-class SubscriptionController @Inject()(actions: AuthorisedActions, registrationSubscriptionService: RegistrationSubscriptionService) extends BaseController {
+class SubscriptionController @Inject()(actions: AuthorisedActions,
+                                       registrationSubscriptionService: RegistrationSubscriptionService,
+                                       agentService: AgentService) extends BaseController {
+
+  private val unauthorisedAction: Future[Result] = Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
+  private val badRequest: Future[Result] = Future.successful(BadRequest(Json.toJson(ExceptionResponse(BAD_REQUEST, "Bad Request"))))
+
+  private def validOrganisationSubmission(model: CompanySubmissionModel): Boolean =
+    model.sap.nonEmpty && model.contactAddress.nonEmpty && model.registeredAddress.nonEmpty
+
+  private def returnInternalServerError(error: Throwable): Future[Result] =
+    Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
 
   def subscribeKnownIndividual(nino: String): Action[AnyContent] = Action.async { implicit request =>
     Try(Nino(nino)) match {
@@ -54,7 +65,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  def subscribeCompany(): Action[AnyContent] = Action.async { implicit request =>
+  val subscribeCompany: Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[CompanySubmissionModel]) match {
       case Success(value) if validOrganisationSubmission(value) => actions.authorisedOrganisationAction {
         case true => authorisedOrganisationAction(value)
@@ -64,7 +75,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  def subscribeGhostIndividual(): Action[AnyContent] = Action.async { implicit request =>
+  val subscribeGhostIndividual: Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
       case Success(value) => actions.authorisedNonResidentIndividualAction {
         case true => authorisedGhostIndividualAction(value)
@@ -74,9 +85,17 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  val subscribeAgent = TODO
+  val enrolAgent: Action[AnyContent] = Action.async { implicit request =>
+    Try(request.body.asJson.get.as[AgentSubmissionModel]) match {
+      case Success(value) => actions.authorisedAgentAction {
+        case true => authorisedAgentAction(value)
+        case false => unauthorisedAction
+      }
+      case Failure(_) => badRequest
+    }
+  }
 
-  def authorisedKnownIndividualAction(nino: Nino)(implicit hc: HeaderCarrier): Future[Result] = {
+  private def authorisedKnownIndividualAction(nino: Nino)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeKnownUser(nino.nino).map {
       reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
@@ -84,7 +103,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  def authorisedGhostIndividualAction(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[Result] = {
+  private def authorisedGhostIndividualAction(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeGhostUser(userFactsModel).map {
       reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
@@ -92,7 +111,7 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  def authorisedOrganisationAction(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[Result] = {
+  private def authorisedOrganisationAction(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[Result] = {
     registrationSubscriptionService.subscribeOrganisationUser(companySubmissionModel).map {
       reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
@@ -100,11 +119,11 @@ class SubscriptionController @Inject()(actions: AuthorisedActions, registrationS
     }
   }
 
-  private def validOrganisationSubmission(model: CompanySubmissionModel): Boolean =
-    model.sap.nonEmpty && model.contactAddress.nonEmpty && model.registeredAddress.nonEmpty
-
-  private val unauthorisedAction: Future[Result] = Future.successful(Unauthorized(Json.toJson(ExceptionResponse(UNAUTHORIZED, "Unauthorised"))))
-  private val badRequest: Future[Result] = Future.successful(BadRequest(Json.toJson(ExceptionResponse(BAD_REQUEST, "Bad Request"))))
-  private def returnInternalServerError(error: Throwable): Future[Result] =
-    Future.successful(InternalServerError(Json.toJson(ExceptionResponse(INTERNAL_SERVER_ERROR, error.getMessage))))
+  private def authorisedAgentAction(agentSubmissionModel: AgentSubmissionModel)(implicit hc: HeaderCarrier): Future[Result] = {
+    agentService.enrolAgent(agentSubmissionModel).map { _ =>
+      NoContent
+    } recoverWith {
+      case error => returnInternalServerError(error)
+    }
+  }
 }

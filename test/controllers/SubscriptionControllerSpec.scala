@@ -24,7 +24,7 @@ import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.{AuthService, RegistrationSubscriptionService}
+import services.{AgentService, AuthService, RegistrationSubscriptionService}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import org.mockito.Mockito._
 import play.api.mvc.{AnyContent, Request}
@@ -38,7 +38,9 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
     val mockService = mock[AuthService]
     val mockRegSubService = mock[RegistrationSubscriptionService]
+    val mockAgentService = mock[AgentService]
     val subscriptionResponse = if (subscriptionSuccess) Future.successful(response) else Future.failed(new Exception("Error message"))
+    val agentEnrolmentResponse = if (subscriptionSuccess) Future.successful() else Future.failed(new Exception("Enrolment failed"))
 
     when(mockService.getAuthority()(ArgumentMatchers.any()))
       .thenReturn(Future.successful(Some(authority)))
@@ -52,13 +54,17 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
     when(mockRegSubService.subscribeOrganisationUser(ArgumentMatchers.any())(ArgumentMatchers.any()))
       .thenReturn(subscriptionResponse)
 
+    when(mockAgentService.enrolAgent(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      .thenReturn(agentEnrolmentResponse)
+
     val actions = new AuthorisedActions(mockService)
 
-    new SubscriptionController(actions, mockRegSubService)
+    new SubscriptionController(actions, mockRegSubService, mockAgentService)
   }
 
   val individual = AuthorisationDataModel(AffinityConstants.individual, ConfidenceLevel.L200, CredentialStrengthConstants.strong)
   val organisation = AuthorisationDataModel(AffinityConstants.organisation, ConfidenceLevel.L50, CredentialStrengthConstants.strong)
+  val agent = AuthorisationDataModel(AffinityConstants.agent, ConfidenceLevel.L50, CredentialStrengthConstants.weak)
 
   "Calling the subscribeKnownIndividual action" when {
 
@@ -516,6 +522,77 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
           "has the message 'Unauthorised'" in {
             (json \ "message").as[String] shouldBe "Unauthorised"
           }
+        }
+      }
+    }
+  }
+
+  "Calling the .enrolAgent method" when {
+
+    "supplied with a valid model" should {
+      val jsonBody = Json.toJson(AgentSubmissionModel("123456789", "ARN123456"))
+      val fakeRequest = FakeRequest().withJsonBody(jsonBody)
+
+      "return a 204 on a success" in {
+        lazy val controller = setupController("", agent, subscriptionSuccess = true)
+        lazy val result = controller.enrolAgent()(fakeRequest)
+
+        await(result).header.status shouldBe 204
+      }
+
+      "return a response" which {
+        lazy val controller = setupController("", agent, subscriptionSuccess = false)
+        lazy val result = controller.enrolAgent()(fakeRequest)
+
+        "has the error code 500" in {
+          await(result).header.status shouldBe 500
+        }
+
+        "has an error message of 'Enrolment failed'" in {
+          lazy val jsonBody = contentAsJson(result)
+          (jsonBody \ "message").as[String] shouldBe "Enrolment failed"
+        }
+      }
+    }
+
+    "supplied with an invalid model" should {
+
+      val jsonBody = Json.toJson("123456789")
+      val fakeRequest = FakeRequest().withJsonBody(jsonBody)
+
+      lazy val controller = setupController("", agent, subscriptionSuccess = true)
+      lazy val result = controller.enrolAgent()(fakeRequest)
+
+      "return a response" which {
+
+        "has the error code 400" in {
+          await(result).header.status shouldBe 400
+        }
+
+        "has an error message of 'Could not bind Json body'" in {
+          lazy val jsonBody = contentAsJson(result)
+          (jsonBody \ "message").as[String] shouldBe "Bad Request"
+        }
+      }
+    }
+
+    "the request is unauthorised" should {
+
+      val jsonBody = Json.toJson(AgentSubmissionModel("123456789", "ARN123456"))
+      val fakeRequest = FakeRequest().withJsonBody(jsonBody)
+
+      lazy val controller = setupController("", organisation, subscriptionSuccess = true)
+      lazy val result = controller.enrolAgent()(fakeRequest)
+
+      "return a response" which {
+
+        "has the error code 401" in {
+          await(result).header.status shouldBe 401
+        }
+
+        "has an error message of 'Unauthorised'" in {
+          lazy val jsonBody = contentAsJson(result)
+          (jsonBody \ "message").as[String] shouldBe "Unauthorised"
         }
       }
     }

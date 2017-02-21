@@ -16,8 +16,9 @@
 
 package auth
 
-import checks.{NonResidentIndividualCheck, ResidentIndividualCheck, OrganisationCheck}
+import checks.{AgentCheck, NonResidentIndividualCheck, OrganisationCheck, ResidentIndividualCheck}
 import javax.inject.{Inject, Singleton}
+
 import play.api.mvc.Result
 import services.AuthService
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -56,5 +57,11 @@ class AuthorisedActions @Inject()(authService: AuthService) {
     } yield result
   }
 
-
+  def authorisedAgentAction(action: Boolean => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    for {
+      authority <- authService.getAuthority()
+      authorised <- AgentCheck.check(authority)
+      result <- createAuthorisedAction(action, authorised)
+    } yield result
+  }
 }
