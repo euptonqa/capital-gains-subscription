@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package models
+package checks
 
-import play.api.libs.json.{Json, OFormat}
+import common.AffinityConstants
+import models.AuthorisationDataModel
 
-case class AgentSubmissionModel (sap: String,
-                                 arn: String)
+import scala.concurrent.Future
 
-object AgentSubmissionModel {
-  implicit val formats: OFormat[AgentSubmissionModel] = Json.format[AgentSubmissionModel]
+object AgentCheck {
+
+  def check(authorisationDataModel: Option[AuthorisationDataModel]): Future[Boolean] = {
+    authorisationDataModel match {
+      case Some(AuthorisationDataModel(AffinityConstants.agent, _, _)) => Future.successful(true)
+      case _ => Future.successful(false)
+    }
+  }
 }

@@ -18,17 +18,20 @@ package common
 
 object AuditConstants {
   val splunk = "SPLUNK AUDIT:\n"
+
+  val eventTypeGeneric: String = "UnexpectedError"
   val transactionDESSubscribe = "CGT DES Subscribe"
   val transactionDESObtainSAP = "CGT DES Obtain SAP"
   val transactionDESObtainSAPGhost = "CGT DES Obtain SAP Ghost"
   val transactionDESGetExistingSAP = "CGT DES Get Subscription"
   val transactionTaxEnrolmentsIssuer = "CGT Tax Enrolments Issuer"
   val transactionTaxEnrolmentsSubscribe = "CGT Tax Enrolments Subscribe"
+  val transactionTaxEnrolmentsIssuerAgent = "CGT Agent Tax Enrolments Issuer"
+  val transactionTaxEnrolmentsSubscribeAgent = "CGT Agent Tax Enrolments Subscribe"
   val eventTypeFailure: String = "CGTFailure"
   val eventTypeSuccess: String = "CGTSuccess"
   val eventTypeConflict: String = "CGTConflict"
   val eventTypeBadGateway: String = "BadGateway"
   val eventTypeNotFound: String = "NotFound"
   val eventTypeInternalServerError: String = "InternalServerError"
-  val eventTypeGeneric: String = "UnexpectedError"
 }
