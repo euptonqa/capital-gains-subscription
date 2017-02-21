@@ -26,7 +26,7 @@ import uk.gov.hmrc.play.http._
 import org.scalatest.BeforeAndAfter
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 import org.scalatest.mock.MockitoSugar
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.http.Status._
 import uk.gov.hmrc.play.http.logging.SessionId
 import uk.gov.hmrc.play.http.ws.WSHttp
@@ -36,16 +36,16 @@ import scala.concurrent.Future
 
 class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFakeApplication with BeforeAndAfter {
 
-  val mockWSHttp = mock[WSHttp]
-  val mockAppConfig = mock[ApplicationConfig]
-  val mockLoggingUtils = mock[Logging]
+  val mockWSHttp: WSHttp = mock[WSHttp]
+  val mockAppConfig: ApplicationConfig = mock[ApplicationConfig]
+  val mockLoggingUtils: Logging = mock[Logging]
 
   object TestTaxEnrolmentsConnector extends TaxEnrolmentsConnector(mockAppConfig, mockLoggingUtils) {
     override val http: HttpPut with HttpGet with HttpPost = mockWSHttp
   }
 
-  implicit val hc = mock[HeaderCarrier]
-  val jsBody = Json.obj("reason" -> "y")
+  implicit val hc: HeaderCarrier = mock[HeaderCarrier]
+  val jsBody: JsObject = Json.obj("reason" -> "y")
   val auditMap: Map[String, String] = Map.empty
   val auditTransactionName: String = ""
 
@@ -274,6 +274,137 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       mockExceptionResponse(new Exception(""))
 
       val result = await(TestTaxEnrolmentsConnector.getSubscriberResponse("12345", jsBody))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+  }
+
+  "TaxEnrolmentsConnector .getIssuerAgentResponse" should {
+
+    implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+    "with a valid request" should {
+
+      mockResponse(NO_CONTENT, jsBody)
+
+      val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
+
+      "return SuccessTaxEnrolmentsResponse with response body" in {
+        result shouldBe SuccessTaxEnrolmentsResponse()
+      }
+    }
+
+    "with an invalid request" should {
+
+      mockResponse(BAD_REQUEST, jsBody)
+
+      val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
+
+      "return InvalidTaxEnrolmentsRequest with reason" in {
+        result shouldBe InvalidTaxEnrolmentsRequest("y")
+      }
+    }
+
+    "when a BadGatewayException occurs" should {
+
+      mockExceptionResponse(new BadGatewayException(""))
+
+      val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+
+    "when an InternalServerException occurs" should {
+
+      mockExceptionResponse(new InternalServerException(""))
+
+      val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+
+    "when an uncaught Exception occurs" should {
+
+      mockExceptionResponse(new Exception(""))
+
+      val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+  }
+
+  "TaxEnrolmentsConnector .getSubscriberAgentResponse" should {
+
+    implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+    "with a valid request" should {
+
+      mockResponse(NO_CONTENT, jsBody)
+
+      val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
+
+      "return SuccessTaxEnrolmentsResponse with response body" in {
+        result shouldBe SuccessTaxEnrolmentsResponse()
+      }
+    }
+
+    "with a bad request" should {
+
+      mockResponse(BAD_REQUEST, jsBody)
+
+      val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
+
+      "return InvalidTaxEnrolmentsRequest with reason" in {
+        result shouldBe InvalidTaxEnrolmentsRequest("y")
+      }
+    }
+
+    "with an unauthorised request" should {
+
+      mockResponse(UNAUTHORIZED, jsBody)
+
+      val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
+
+      "return InvalidTaxEnrolmentsRequest with reason" in {
+        result shouldBe InvalidTaxEnrolmentsRequest("y")
+      }
+    }
+
+    "when a BadGatewayException occurs" should {
+
+      mockExceptionResponse(new BadGatewayException(""))
+
+      val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+
+    "when an InternalServerException occurs" should {
+
+      mockExceptionResponse(new InternalServerException(""))
+
+      val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
+
+      "return a TaxEnrolmentsErrorResponse" in {
+        result shouldBe TaxEnrolmentsErrorResponse
+      }
+    }
+
+    "when an uncaught Exception occurs" should {
+
+      mockExceptionResponse(new Exception(""))
+
+      val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
 
       "return a TaxEnrolmentsErrorResponse" in {
         result shouldBe TaxEnrolmentsErrorResponse
