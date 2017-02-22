@@ -130,8 +130,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   @inline
-  private def cGET[O](url: String, headers: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier) = {
-    http.GET[O](url, headers)(rds, hc = createHeaderCarrier(hc))
+  private def cGET[O](url: String, queryParams: Seq[(String, String)] = Seq.empty)(implicit rds: HttpReads[O], hc: HeaderCarrier) = {
+    http.GET[O](url, queryParams)(rds, hc = createHeaderCarrier(hc))
   }
 
   private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
@@ -241,8 +241,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   def getExistingSap(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-    val getSubscriptionUrl = s"$serviceUrl/registration/details?nino=${registerIndividualModel.nino}"
-    val response = cGET[HttpResponse](getSubscriptionUrl)
+    val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/details"
+    val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", registerIndividualModel.nino.nino)))
     val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> getSubscriptionUrl)
     response map {
       r =>
