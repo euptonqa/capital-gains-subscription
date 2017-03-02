@@ -118,7 +118,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse
       )
 
-      lazy val result = await(testService.subscribe(companySubmissionModel))
+      lazy val result = await(testService.subscribeOrganisationUser(companySubmissionModel))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"

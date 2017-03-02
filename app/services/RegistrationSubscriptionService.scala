@@ -63,13 +63,6 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
     } yield cgtRef
   }
 
-  def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
-    Logger.warn("Issuing a call to DES to register and subscribe organisation user")
-    for {
-      cgtRef <- subscribe(companySubmissionModel)
-    } yield cgtRef
-  }
-
   private[services] def subscribe(sapResponse: DesResponse, taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       sap <- fetchDESResponse(sapResponse)
@@ -78,8 +71,10 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
     } yield cgtRef
   }
 
-  private[services] def subscribe(companySubmissionModel: CompanySubmissionModel
-                                  /*,taxEnrolmentsBody: EnrolmentIssuerRequestModel*/)(implicit hc: HeaderCarrier): Future[String] = {
+  def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
+
+    Logger.warn("Issuing a call to DES to register and subscribe organisation user")
+
     for {
       subscribeResponse <- desConnector.subscribe(companySubmissionModel)
       cgtRef1 <- fetchDESResponse(subscribeResponse)
