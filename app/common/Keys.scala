@@ -22,6 +22,7 @@ object Keys {
     val serviceName = "HMRC-CGT"
     val ninoIdentifier = "NINO"
     val postcodeIdentifier = "POSTCODE"
+    val cgtRefIdentifier = "CGTREF1"
     val callbackUrl = ""
   }
 }

@@ -57,7 +57,8 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
     Logger.warn("Issuing a call to DES to register and subscribe ghost user")
     for {
       sapResponse <- desConnector.obtainSAPGhost(userFactsModel)
-      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(userFactsModel.postCode)
+      cgtRef1 <- fetchDESResponse(sapResponse)
+      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
       cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
   }
@@ -65,8 +66,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
     Logger.warn("Issuing a call to DES to register and subscribe organisation user")
     for {
-      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(companySubmissionModel.registeredAddress.get.postCode.get)
-      cgtRef <- subscribe(companySubmissionModel, taxEnrolmentsBody)
+      cgtRef <- subscribe(companySubmissionModel)
     } yield cgtRef
   }
 
@@ -78,10 +78,12 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
     } yield cgtRef
   }
 
-  private[services] def subscribe(companySubmissionModel: CompanySubmissionModel,
-                                  taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
+  private[services] def subscribe(companySubmissionModel: CompanySubmissionModel
+                                  /*,taxEnrolmentsBody: EnrolmentIssuerRequestModel*/)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       subscribeResponse <- desConnector.subscribe(companySubmissionModel)
+      cgtRef1 <- fetchDESResponse(subscribeResponse)
+      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
       cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, companySubmissionModel.sap.get)
     } yield cgtRef
   }
@@ -118,8 +120,8 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
     Future.successful(EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier))
   }
 
-  def taxEnrolmentIssuerGhostUserBody(postcode: String): Future[EnrolmentIssuerRequestModel] = {
-    val identifier = Identifier(TaxEnrolmentsKeys.postcodeIdentifier, postcode)
+  def taxEnrolmentIssuerGhostUserBody(cgtRef1: String): Future[EnrolmentIssuerRequestModel] = {
+    val identifier = Identifier(TaxEnrolmentsKeys.cgtRefIdentifier, cgtRef1)
     Future.successful(EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier))
   }
 
