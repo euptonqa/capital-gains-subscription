@@ -26,7 +26,7 @@ case object EnrolmentIssuerRequestModel {
 }
 
 case class Identifier(name: String,
-                      nino: String)
+                      identifier: String)
 
 case object Identifier {
   implicit val formats: OFormat[Identifier] = Json.format[Identifier]
