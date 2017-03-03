@@ -78,11 +78,11 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
   "Calling RegistrationSubscriptionService .taxEnrolmentIssuerGhostUserBody" should {
 
     lazy val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
-    lazy val result = service.taxEnrolmentIssuerGhostUserBody("ABC 123")
+    lazy val result = service.taxEnrolmentIssuerGhostUserBody("CGTREF")
 
     "return a formatted EnrolmentIssuerRequestModel" in {
       await(result) shouldEqual EnrolmentIssuerRequestModel("HMRC-CGT",
-        Identifier("POSTCODE", "ABC 123"))
+        Identifier("CGTREF1", "CGTREF"))
     }
   }
 
@@ -118,7 +118,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse
       )
 
-      lazy val result = await(testService.subscribe(companySubmissionModel, taxEnrolmentsBody))
+      lazy val result = await(testService.subscribeOrganisationUser(companySubmissionModel))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"
