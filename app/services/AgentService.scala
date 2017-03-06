@@ -18,21 +18,24 @@ package services
 
 import javax.inject.Inject
 
+import common.Keys.TaxEnrolmentsKeys
 import connectors.{SuccessTaxEnrolmentsResponse, TaxEnrolmentsConnector, TaxEnrolmentsResponse}
-import models.AgentSubmissionModel
+import models.{AgentSubmissionModel, EnrolmentIssuerRequestModel, EnrolmentSubscriberRequestModel, Identifier}
 import play.api.libs.json.Json
 import uk.gov.hmrc.play.http.HeaderCarrier
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AgentService @Inject()(taxEnrolmentsConnector: TaxEnrolmentsConnector){
 
   def enrolAgent(model: AgentSubmissionModel)(implicit hc: HeaderCarrier): Future[Unit] = {
 
-    val modelAsJson = Json.toJson(model)
-    val subscriberRequest = taxEnrolmentsConnector.getSubscriberAgentResponse(model.arn, modelAsJson)
-    val issuerRequest = taxEnrolmentsConnector.getIssuerAgentResponse(model.arn, modelAsJson)
+    val identifier = Identifier(TaxEnrolmentsKeys.arnIdentifier, model.arn)
+    val issuerModel = EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier)
+    val subscriberModel = EnrolmentSubscriberRequestModel(TaxEnrolmentsKeys.serviceName, TaxEnrolmentsKeys.callbackUrl, model.arn)
+    val subscriberRequest = taxEnrolmentsConnector.getSubscriberAgentResponse(model.arn, Json.toJson(subscriberModel))
+    val issuerRequest = taxEnrolmentsConnector.getIssuerAgentResponse(model.arn, Json.toJson(issuerModel))
 
     def compositeResponse(subscriberResponse: TaxEnrolmentsResponse, issuerResponse: TaxEnrolmentsResponse): Future[Unit] =
       (subscriberResponse, issuerResponse) match {

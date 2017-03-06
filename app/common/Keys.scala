@@ -21,6 +21,7 @@ object Keys {
   object TaxEnrolmentsKeys {
     val serviceName = "HMRC-CGT"
     val ninoIdentifier = "NINO"
+    val arnIdentifier = "ARN"
     val postcodeIdentifier = "POSTCODE"
     val cgtRefIdentifier = "CGTREF1"
     val callbackUrl = ""
