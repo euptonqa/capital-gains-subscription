@@ -369,7 +369,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
     "passing a valid CompanySubmissionModel in the request" should {
 
-      val submissionModel = Json.toJson(CompanySubmissionModel(Some("sap"), Some(addressModel), Some(addressModel)))
+      val submissionModel = Json.toJson(CompanySubmissionModel(Some("123456789098765"), Some(addressModel), Some(addressModel)))
       val fakeRequest = FakeRequest().withJsonBody(submissionModel)
 
       "when the service returns a valid SubscriptionReferenceModel" should {
@@ -475,7 +475,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
       "contactAddress is empty" should {
 
-        val submissionModel = Json.toJson(CompanySubmissionModel(Some("sap"), None, Some(addressModel)))
+        val submissionModel = Json.toJson(CompanySubmissionModel(Some("123456789098765"), None, Some(addressModel)))
         val fakeRequest = FakeRequest().withJsonBody(submissionModel)
 
         lazy val controller = setupController("Error message", organisation, subscriptionSuccess = false)
@@ -501,7 +501,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
       "registeredAddress is empty" should {
 
-        val submissionModel = Json.toJson(CompanySubmissionModel(Some("sap"), Some(addressModel), None))
+        val submissionModel = Json.toJson(CompanySubmissionModel(Some("123456789098765"), Some(addressModel), None))
         val fakeRequest = FakeRequest().withJsonBody(submissionModel)
 
         lazy val controller = setupController("Error message", organisation, subscriptionSuccess = false)
