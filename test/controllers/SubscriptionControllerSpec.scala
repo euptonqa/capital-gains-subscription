@@ -530,7 +530,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
   "Calling the .enrolAgent method" when {
 
     "supplied with a valid model" should {
-      val jsonBody = Json.toJson(AgentSubmissionModel("123456789", "ARN123456"))
+      val jsonBody = Json.toJson(AgentSubmissionModel("123456789098765", "CARN1234567"))
       val fakeRequest = FakeRequest().withJsonBody(jsonBody)
 
       "return a 204 on a success" in {
@@ -557,7 +557,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
     "supplied with an invalid model" should {
 
-      val jsonBody = Json.toJson("123456789")
+      val jsonBody = Json.toJson("123456789098765")
       val fakeRequest = FakeRequest().withJsonBody(jsonBody)
 
       lazy val controller = setupController("", agent, subscriptionSuccess = true)
@@ -578,7 +578,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
 
     "the request is unauthorised" should {
 
-      val jsonBody = Json.toJson(AgentSubmissionModel("123456789", "ARN123456"))
+      val jsonBody = Json.toJson(AgentSubmissionModel("123456789098765", "CARN1234567"))
       val fakeRequest = FakeRequest().withJsonBody(jsonBody)
 
       lazy val controller = setupController("", organisation, subscriptionSuccess = true)

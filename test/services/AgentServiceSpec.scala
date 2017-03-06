@@ -31,7 +31,7 @@ class AgentServiceSpec extends UnitSpec with OneAppPerSuite with MockitoSugar {
 
   implicit val hc: HeaderCarrier = mock[HeaderCarrier]
 
-  val model: AgentSubmissionModel = AgentSubmissionModel("dummySap", "dummyArn")
+  val model: AgentSubmissionModel = AgentSubmissionModel("123456789098765", "CARN1234567")
 
   def setupService(issuerResponse: TaxEnrolmentsResponse, subscriberResponse: TaxEnrolmentsResponse): AgentService = {
 
