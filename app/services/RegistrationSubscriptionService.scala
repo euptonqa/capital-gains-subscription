@@ -54,7 +54,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   }
 
   def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
-    Logger.warn("Issuing a call to DES to register and subscribe ghost user")
+    Logger.info("Issuing a call to DES to register and subscribe ghost user")
     for {
       sapResponse <- desConnector.obtainSAPGhost(userFactsModel)
       cgtRef1 <- fetchDESResponse(sapResponse)
@@ -73,7 +73,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
 
   def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
 
-    Logger.warn("Issuing a call to DES to register and subscribe organisation user")
+    Logger.info("Issuing a call to DES to register and subscribe organisation user")
 
     for {
       subscribeResponse <- desConnector.subscribe(companySubmissionModel)

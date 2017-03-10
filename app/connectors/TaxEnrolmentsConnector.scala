@@ -90,12 +90,11 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           SuccessTaxEnrolmentsResponse
 
         case BAD_REQUEST =>
-          val message = (r.json \ "reason").as[String]
-          Logger.warn(s"Tax Enrolments reported an error with the request $message to Url $putUrl")
+          Logger.warn(s"Tax Enrolments reported an error with the request ${r.body} to Url $putUrl")
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(message)
+          InvalidTaxEnrolmentsRequest(r.body)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsIssuer)
@@ -117,14 +116,12 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
           SuccessTaxEnrolmentsResponse
-
         case BAD_REQUEST | UNAUTHORIZED =>
-          val message = (r.json \ "reason").as[String]
-          Logger.warn(s"Tax Enrolments reported an error with the request $message to Url $putUrl")
+          Logger.warn(s"Tax Enrolments reported an error with the request ${r.body} to Url $putUrl")
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsSubscribe,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(message)
+          InvalidTaxEnrolmentsRequest(r.body)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsSubscribe)
@@ -146,14 +143,12 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
           SuccessTaxEnrolmentsResponse
-
         case BAD_REQUEST | UNAUTHORIZED =>
-          val message = (r.json \ "reason").as[String]
-          Logger.warn(s"Failed call to Tax Enrolments subscribing an agent with reason $message.")
+          Logger.warn(s"Failed call to Tax Enrolments subscribing an agent with reason ${r.body}.")
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuerAgent,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(message)
+          InvalidTaxEnrolmentsRequest(r.body)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsSubscribe)
@@ -175,14 +170,12 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
             detail = auditMap,
             eventType = AuditConstants.eventTypeSuccess)
           SuccessTaxEnrolmentsResponse
-
         case BAD_REQUEST =>
-          val message = (r.json \ "reason").as[String]
-          Logger.warn(s"Tax Enrolments reported an error with the request $message to Url $putUrl")
+          Logger.warn(s"Tax Enrolments reported an error with the request ${r.body} to Url $putUrl")
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(message)
+          InvalidTaxEnrolmentsRequest(r.body)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsIssuer)
