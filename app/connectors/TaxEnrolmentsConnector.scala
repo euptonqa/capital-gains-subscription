@@ -201,7 +201,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
         TaxEnrolmentsErrorResponse
 
       case _: Exception =>
-        Logger.warn(s"Tax Enrolments reported a ${ex.toString} to Url $putUrl")
+        Logger.warn(s"Tax Enrolments reported a ${ex.printStackTrace()} to Url $putUrl")
         auditLogger.audit(transactionName = auditTransactionName,
           detail = auditMap,
           eventType = AuditConstants.eventTypeGeneric)
