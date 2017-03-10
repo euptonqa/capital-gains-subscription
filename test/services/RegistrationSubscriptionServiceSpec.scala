@@ -133,17 +133,17 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.subscribe(InvalidDesRequest("error message"), taxEnrolmentsBody))
+        await(testService.subscribe(InvalidDesRequest(Json.obj("reason" -> "y")), taxEnrolmentsBody))
       }
 
-      "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+      "throw an exception with json body message" in {
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
 
     "with a failed DesResponse for subscription" should {
 
-      lazy val testService = setupMock(InvalidDesRequest("error message"),
+      lazy val testService = setupMock(InvalidDesRequest(Json.obj("reason" -> "y")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse
       )
@@ -152,15 +152,15 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
       }
 
-      "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+      "throw an exception with json body message" in {
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
 
     "with a failed Tax Enrolments issuer response" should {
 
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        InvalidTaxEnrolmentsRequest("error message"),
+        InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y")),
         SuccessTaxEnrolmentsResponse
       )
 
@@ -168,8 +168,8 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
       }
 
-      "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+      "throw an exception with json body message" in {
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
 
@@ -177,15 +177,15 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         SuccessTaxEnrolmentsResponse,
-        InvalidTaxEnrolmentsRequest("error message")
+        InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       )
 
       lazy val ex = intercept[Exception] {
         await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
       }
 
-      "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+      "throw an exception with json body message" in {
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
   }
@@ -212,7 +212,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
-        Some(InvalidDesRequest("error message"))
+        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
       )
 
       lazy val ex = intercept[Exception] {
@@ -220,7 +220,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       }
 
       "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
 
@@ -245,7 +245,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
         Some(DuplicateDesResponse),
-        Some(InvalidDesRequest("error message"))
+        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
       )
 
       lazy val ex = intercept[Exception] {
@@ -253,7 +253,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       }
 
       "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
 
@@ -281,15 +281,15 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
-        Some(InvalidDesRequest("error message"))
+        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
       )
 
       lazy val ex = intercept[Exception] {
         await(testService.subscribeGhostUser(userFactsModel))
       }
 
-      "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+      "throw an exception with json body message" in {
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
   }
@@ -313,18 +313,18 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
     "with an invalid request" should {
 
-      lazy val testService = setupMock(InvalidDesRequest("error message"),
+      lazy val testService = setupMock(InvalidDesRequest(Json.obj("reason" -> "y")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
-        Some(InvalidDesRequest("error message"))
+        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
       )
 
       lazy val ex = intercept[Exception] {
         await(testService.subscribeOrganisationUser(companySubmissionModel))
       }
 
-      "throw an exception with error message" in {
-        ex.getMessage shouldBe "error message"
+      "throw an exception with json body message" in {
+        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
       }
     }
   }

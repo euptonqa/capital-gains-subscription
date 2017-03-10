@@ -24,7 +24,7 @@ import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -40,7 +40,7 @@ case object NotFoundDesResponse extends DesResponse
 
 case object DesErrorResponse extends DesResponse
 
-case class InvalidDesRequest(message: String) extends DesResponse
+case class InvalidDesRequest(message: JsValue) extends DesResponse
 
 case object DuplicateDesResponse extends DesResponse
 
@@ -62,7 +62,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
     submissionModel match {
       case individual: SubscribeIndividualModel =>
-        Logger.warn("Made a post request to the stub with an individual subscribers sap of " + individual.sap)
+        Logger.info("Made a post request to the stub with an individual subscribers sap of " + individual.sap)
 
         val requestUrl: String = s"$serviceUrl$serviceContext/individual/${individual.sap}/subscribe"
         val response = cPOST(requestUrl, Json.toJson(individual))
@@ -70,7 +70,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         handleResponse(response, auditMap, individual.sap)
 
       case company: CompanySubmissionModel =>
-        Logger.warn("Made a post request to the stub with a company subscribers sap of " + company.sap.get)
+        Logger.info("Made a post request to the stub with a company subscribers sap of " + company.sap.get)
 
         val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
         val response = cPOST(requestUrl, Json.toJson(company))
@@ -95,10 +95,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case BAD_REQUEST =>
-          val message = (r.json \ "reason").as[String]
-          Logger.warn(s"Error with the request $message")
+          Logger.warn(s"Error with the request ${r.body}")
           logger.audit(transactionDESSubscribe, failureAuditMap(auditMap, r), eventTypeFailure)
-          InvalidDesRequest(message)
+          InvalidDesRequest(r.json)
       }
     } recover {
       case _: NotFoundException =>
@@ -114,7 +113,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         logger.audit(transactionDESSubscribe, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.toString} for $reference")
+        Logger.warn(s"Exception of ${ex.printStackTrace()} for $reference")
         logger.audit(transactionDESSubscribe, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
@@ -152,7 +151,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val response = cPOST(requestUrl, jsonNino)
     val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> requestUrl)
 
-    Logger.warn("Made a post request to the stub with a url of " + requestUrl)
+    Logger.info("Made a post request to the stub with a url of " + requestUrl)
     response map {
       r =>
         r.status match {
@@ -169,10 +168,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESObtainSAP, conflictAuditMap(auditMap, r), eventTypeConflict)
             DuplicateDesResponse
           case BAD_REQUEST =>
-            val message = (r.json \ "reason").as[String]
-            Logger.warn(s"Error with the request $message")
+            Logger.warn(s"Error with the request ${r.body}")
             logger.audit(transactionDESObtainSAP, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(message)
+            InvalidDesRequest(r.json)
         }
     } recover {
       case _: NotFoundException =>
@@ -188,7 +186,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         logger.audit(transactionDESObtainSAP, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.toString} transactionDESObtainSAP number")
+        Logger.warn(s"Exception of ${ex.printStackTrace()} transactionDESObtainSAP number")
         logger.audit(transactionDESObtainSAP, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
@@ -199,6 +197,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val jsonFullDetails = Json.toJson(userFactsModel)
     val response = cPOST(requestUrl, jsonFullDetails)
     val auditMap: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
+    Logger.info("Made a post request to the stub with a url of " + requestUrl)
+
     response map {
       r =>
         r.status match {
@@ -215,10 +215,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESObtainSAPGhost, conflictAuditMap(auditMap, r), eventTypeConflict)
             DuplicateDesResponse
           case BAD_REQUEST =>
-            val message = (r.json \ "reason").as[String]
-            Logger.warn(s"Error with the request $message")
+            Logger.warn(s"Error with the request ${r.body}")
             logger.audit(transactionDESObtainSAPGhost, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(message)
+            InvalidDesRequest(r.json)
         }
     } recover {
       case ex: NotFoundException =>
@@ -234,7 +233,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.toString} transactionDESObtainSAP number")
+        Logger.warn(s"Exception of ${ex.printStackTrace()} transactionDESObtainSAP number")
         logger.audit(transactionDESObtainSAPGhost, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
@@ -244,6 +243,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/details"
     val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", registerIndividualModel.nino.nino)))
     val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> getSubscriptionUrl)
+    Logger.info("Made a post request to the stub with a url of " + getSubscriptionUrl)
+
     response map {
       r =>
         r.status match {
@@ -252,10 +253,9 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeSuccess)
             SuccessDesResponse(r.json)
           case BAD_REQUEST =>
-            val message = (r.json \ "reason").as[String]
-            Logger.warn(s"Error with the request $message")
+            Logger.warn(s"Error with the request ${r.body}")
             logger.audit(transactionDESGetExistingSAP, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(message)
+            InvalidDesRequest(r.json)
         }
     } recover {
       case ex: NotFoundException =>
@@ -271,7 +271,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.toString} transactionDESGetExistingSAP number")
+        Logger.warn(s"Exception of ${ex.printStackTrace()} transactionDESGetExistingSAP number")
         logger.audit(transactionDESGetExistingSAP, auditMap, eventTypeGeneric)
         DesErrorResponse
     }

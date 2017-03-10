@@ -54,7 +54,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   }
 
   def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
-    Logger.warn("Issuing a call to DES to register and subscribe ghost user")
+    Logger.info("Issuing a call to DES to register and subscribe ghost user")
     for {
       sapResponse <- desConnector.obtainSAPGhost(userFactsModel)
       cgtRef1 <- fetchDESResponse(sapResponse)
@@ -73,7 +73,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
 
   def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
 
-    Logger.warn("Issuing a call to DES to register and subscribe organisation user")
+    Logger.info("Issuing a call to DES to register and subscribe organisation user")
 
     for {
       subscribeResponse <- desConnector.subscribe(companySubmissionModel)
@@ -99,14 +99,14 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   private def fetchDESResponse(response: DesResponse) = {
     response match {
       case SuccessDesResponse(data) => Future.successful(data.as[String])
-      case InvalidDesRequest(message) => Future.failed(new Exception(message))
+      case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
 
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
     response match {
       case SuccessTaxEnrolmentsResponse => Future.successful()
-      case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message))
+      case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
 
