@@ -38,7 +38,7 @@ case object SuccessTaxEnrolmentsResponse extends TaxEnrolmentsResponse
 case object TaxEnrolmentsErrorResponse extends TaxEnrolmentsResponse
 
 //TODO: check reasoning for having this response at all, we already log the type and only care about 2 different responses so why?
-case class InvalidTaxEnrolmentsRequest(message: String) extends TaxEnrolmentsResponse
+case class InvalidTaxEnrolmentsRequest(message: JsValue) extends TaxEnrolmentsResponse
 
 @Singleton
 class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger: Logging) extends HttpErrorFunctions with ServicesConfig {
@@ -94,7 +94,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(r.body)
+          InvalidTaxEnrolmentsRequest(r.json)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsIssuer)
@@ -121,7 +121,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsSubscribe,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(r.body)
+          InvalidTaxEnrolmentsRequest(r.json)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsSubscribe)
@@ -148,7 +148,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuerAgent,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(r.body)
+          InvalidTaxEnrolmentsRequest(r.json)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsSubscribe)
@@ -175,7 +175,7 @@ class TaxEnrolmentsConnector @Inject()(appConfig: ApplicationConfig, auditLogger
           auditLogger.audit(transactionName = AuditConstants.transactionTaxEnrolmentsIssuer,
             detail = auditMap ++ Map("Failure reason" -> r.body, "Status" -> r.status.toString),
             eventType = AuditConstants.eventTypeFailure)
-          InvalidTaxEnrolmentsRequest(r.body)
+          InvalidTaxEnrolmentsRequest(r.json)
       }
     } recover {
       case ex => recoverRequest(putUrl, ex, auditMap, AuditConstants.transactionTaxEnrolmentsIssuer)

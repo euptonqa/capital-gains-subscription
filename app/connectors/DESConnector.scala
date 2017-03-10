@@ -24,7 +24,7 @@ import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -40,7 +40,7 @@ case object NotFoundDesResponse extends DesResponse
 
 case object DesErrorResponse extends DesResponse
 
-case class InvalidDesRequest(message: String) extends DesResponse
+case class InvalidDesRequest(message: JsValue) extends DesResponse
 
 case object DuplicateDesResponse extends DesResponse
 
@@ -97,7 +97,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         case BAD_REQUEST =>
           Logger.warn(s"Error with the request ${r.body}")
           logger.audit(transactionDESSubscribe, failureAuditMap(auditMap, r), eventTypeFailure)
-          InvalidDesRequest(r.body)
+          InvalidDesRequest(r.json)
       }
     } recover {
       case _: NotFoundException =>
@@ -113,7 +113,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         logger.audit(transactionDESSubscribe, auditMap, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.printStackTrace} for $reference")
+        Logger.warn(s"Exception of ${ex.printStackTrace()} for $reference")
         logger.audit(transactionDESSubscribe, auditMap, eventTypeGeneric)
         DesErrorResponse
     }
@@ -170,7 +170,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           case BAD_REQUEST =>
             Logger.warn(s"Error with the request ${r.body}")
             logger.audit(transactionDESObtainSAP, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(r.body)
+            InvalidDesRequest(r.json)
         }
     } recover {
       case _: NotFoundException =>
@@ -217,7 +217,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           case BAD_REQUEST =>
             Logger.warn(s"Error with the request ${r.body}")
             logger.audit(transactionDESObtainSAPGhost, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(r.body)
+            InvalidDesRequest(r.json)
         }
     } recover {
       case ex: NotFoundException =>
@@ -255,7 +255,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           case BAD_REQUEST =>
             Logger.warn(s"Error with the request ${r.body}")
             logger.audit(transactionDESGetExistingSAP, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(r.body)
+            InvalidDesRequest(r.json)
         }
     } recover {
       case ex: NotFoundException =>

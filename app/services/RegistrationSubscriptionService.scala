@@ -99,14 +99,14 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   private def fetchDESResponse(response: DesResponse) = {
     response match {
       case SuccessDesResponse(data) => Future.successful(data.as[String])
-      case InvalidDesRequest(message) => Future.failed(new Exception(message))
+      case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
 
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
     response match {
       case SuccessTaxEnrolmentsResponse => Future.successful()
-      case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message))
+      case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
 

@@ -138,14 +138,14 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       val response = Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error"))))
       val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
-      result shouldBe InvalidDesRequest("error")
+      result shouldBe InvalidDesRequest(Json.obj("reason" -> "error"))
     }
 
     "return a BAD_REQUEST with a valid safeID and an invalid reference" should {
       val response = Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error"))))
       val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
-      result shouldBe InvalidDesRequest("error")
+      result shouldBe InvalidDesRequest(Json.obj("reason" -> "error"))
     }
 
     "return a NOT_FOUND error with an reference containing 'not found'" should {
@@ -274,7 +274,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
       val result = TestDESConnector.obtainSAPGhost(details)
 
-      "return success" in {
+      "return DuplicateDesResponse" in {
         await(result) shouldBe DuplicateDesResponse
       }
     }
@@ -322,8 +322,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
       val result = TestDESConnector.obtainSAPGhost(details)
 
-      "return the reason" in {
-        await(result) shouldBe InvalidDesRequest("etmp reason")
+      "return the json body" in {
+        await(result) shouldBe InvalidDesRequest(Json.obj("reason" -> "etmp reason"))
       }
     }
 
@@ -415,7 +415,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
       await(result) shouldBe DesErrorResponse
     }
 
-    "making a call for a bad request, return the reason" should {
+    "making a call for a bad request, return the json body" should {
 
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(),
         ArgumentMatchers.any())(ArgumentMatchers.any(),
@@ -424,7 +424,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
       val result = TestDESConnector.obtainSAP(RegisterIndividualModel(Nino(nino)))
 
-      await(result) shouldBe InvalidDesRequest("etmp reason")
+      await(result) shouldBe InvalidDesRequest(Json.obj("reason" -> "etmp reason"))
     }
 
     "making a call for a request that triggers a NotFoundException return a NotFoundDesResponse" should {
@@ -458,7 +458,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
       val result = TestDESConnector.getExistingSap(RegisterIndividualModel(Nino(nino)))
 
-      await(result) shouldBe InvalidDesRequest("etmp reason")
+      await(result) shouldBe InvalidDesRequest(Json.obj("reason" -> "etmp reason"))
     }
 
     "return a NotFoundDesResponse with a NOT_FOUND exception" in {

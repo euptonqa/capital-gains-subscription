@@ -131,7 +131,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getIssuerResponse("12345", jsBody))
 
       "return InvalidTaxEnrolmentsRequest with reason" in {
-        result shouldBe InvalidTaxEnrolmentsRequest("y")
+        result shouldBe InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       }
     }
 
@@ -232,7 +232,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberResponse("12345", jsBody))
 
       "return InvalidTaxEnrolmentsRequest with reason" in {
-        result shouldBe InvalidTaxEnrolmentsRequest("y")
+        result shouldBe InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       }
     }
 
@@ -243,7 +243,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberResponse("12345", jsBody))
 
       "return InvalidTaxEnrolmentsRequest with reason" in {
-        result shouldBe InvalidTaxEnrolmentsRequest("y")
+        result shouldBe InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       }
     }
 
@@ -303,7 +303,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getIssuerAgentResponse("12345", jsBody))
 
       "return InvalidTaxEnrolmentsRequest with reason" in {
-        result shouldBe InvalidTaxEnrolmentsRequest("y")
+        result shouldBe InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       }
     }
 
@@ -363,7 +363,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
 
       "return InvalidTaxEnrolmentsRequest with reason" in {
-        result shouldBe InvalidTaxEnrolmentsRequest("y")
+        result shouldBe InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       }
     }
 
@@ -374,7 +374,7 @@ class TaxEnrolmentsConnectorSpec extends UnitSpec with MockitoSugar with WithFak
       val result = await(TestTaxEnrolmentsConnector.getSubscriberAgentResponse("12345", jsBody))
 
       "return InvalidTaxEnrolmentsRequest with reason" in {
-        result shouldBe InvalidTaxEnrolmentsRequest("y")
+        result shouldBe InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
       }
     }
 
