@@ -9,6 +9,22 @@ It also enrols an individual's GG account to the Capital Gains Tax service.
 
 There is a frontend microservice [Capital-Gains-Subscription-Frontend](https://github.com/hmrc/capital-gains-subscription-frontend) that provides the views and controllers which interact with this protected microservice.
 
+### Run the application
+
+To run the application execute
+
+```
+sbt 'run 9770'
+```
+
+### Test the application
+
+To test the application execute
+
+```
+sbt test
+```
+
 ## Requirements
 
 This service is written in [Scala](http://www.scala-lang.org/) and [Play](http://playframework.com/), so needs a [JRE] to run.
