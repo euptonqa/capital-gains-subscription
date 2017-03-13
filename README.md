@@ -21,3 +21,55 @@ This service is written in [Scala](http://www.scala-lang.org/) and [Play](http:/
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
+
+## End points
+
+<table>
+    <tr>
+        <th>Path</th>
+        <th>Supported Methods</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>/capital-gains-subscription/subscribe/resident/individual</td>
+        <td>POST</td>
+        <td>End point that registers a business partner in ETMP and subscribes a resident individual user to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires the following request parameters: nino : String</td>
+    </tr>
+    <tr>
+        <td>/capital-gains-subscription/subscribe/non-resident/individual-nino</td>
+        <td>POST</td>
+        <td>End point that registers a business partner in ETMP and subscribes a non-resident individual user known to HMRC to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires the following request parameters: nino : String</td>
+    </tr>
+    <tr>
+        <td>/capital-gains-subscription/subscribe/non-resident/individual</td>
+        <td>POST</td>
+        <td>End point that registers a business partner in ETMP and subscribes a non-resident individual user with no HMRC footprint to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires a JSON request body containing:
+              firstName: String,
+              lastName: String,
+              addressLineOne: String,
+              addressLineTwo: Option[String],
+              townOrCity: String,
+              county: Option[String],
+              postCode: String,
+              country: String
+        </td>
+    </tr>
+    <tr>
+        <td>/capital-gains-subscription/subscribe/company</td>
+        <td>POST</td>
+        <td>End point that subscribes a non-resident company to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires a JSON request body containing:
+            sap: Option[String],
+            contactDetailsModel: Option[ContactDetailsModel],
+            contactAddress: Option[CompanyAddressModel],
+            registeredAddress: Option[CompanyAddressModel]
+        </td>
+    </tr>
+    <tr>
+        <td>/capital-gains-subscription/subscribe/agent</td>
+        <td>POST</td>
+        <td>End point that enrols a non-resident agent to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires a JSON request body containing:
+            sap: String,
+            arn: String
+        </td>
+    </tr>
+</table>
