@@ -38,7 +38,7 @@ This code is open source software licensed under the [Apache 2.0 License]("http:
     <tr>
         <td>/capital-gains-subscription/subscribe/non-resident/individual-nino</td>
         <td>POST</td>
-        <td>End point that registers a business partner in ETMP and subscribes a non-resident individual user known to HMRC to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires the following request parameters: nino : String</td>
+        <td>End point that registers a business partner in ETMP and subscribes a non-resident individual user known to the HMRC to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires the following request parameters: nino : String</td>
     </tr>
     <tr>
         <td>/capital-gains-subscription/subscribe/non-resident/individual</td>
@@ -67,9 +67,132 @@ This code is open source software licensed under the [Apache 2.0 License]("http:
     <tr>
         <td>/capital-gains-subscription/subscribe/agent</td>
         <td>POST</td>
-        <td>End point that enrols a non-resident agent to the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires a JSON request body containing:
+        <td>End point that enrols a non-resident agent for the Capital Gains Tax Service. Returns a JSON object containing a subscription reference. This requires a JSON request body containing:
             sap: String,
             arn: String
         </td>
     </tr>
 </table>
+
+## POST /capital-gains-subscription/subscribe/resident/individual
+
+Registers a business partner in ETMP and subscribes a resident individual user to the Capital Gains Tax Service.
+
+### Example of usage
+
+POST /capital-gains-subscription/subscribe/resident/individual?nino=XX123456X
+
+**Response**
+```json
+{
+    "cgtRef": "CGT123456789098"
+}
+```
+
+## POST /capital-gains-subscription/subscribe/non-resident/individual-nino
+
+Registers a business partner in ETMP and subscribes a non-resident individual user known to the HMRC to the Capital Gains Tax Service.
+
+### Example of usage
+
+POST /capital-gains-subscription/subscribe/non-resident/individual-nino?nino=XX123456X
+
+**Response**
+```json
+{
+    "cgtRef": "CGT123456789098"
+}
+```
+
+## POST /capital-gains-subscription/subscribe/non-resident/individual
+
+Registers a business partner in ETMP and subscribes a non-resident individual user with no HMRC footprint to the Capital Gains Tax Service.
+
+### Example of usage
+
+POST /capital-gains-subscription/subscribe/non-resident/individual
+
+**Request Body**
+```json
+{
+    "firstName": "Joe",
+    "lastName": "Bloggs",
+    "addressLineOne": "60 Example Lane",
+    "addressLineTwo": "Example Region",
+    "townOrCity": "Example Town",
+    "county": "Example County",
+    "postCode": "X123 1XX",
+    "country": "DE"
+}
+```
+
+**Response**
+```json
+{
+    "cgtRef": "CGT123456789098"
+}
+```
+
+## POST /capital-gains-subscription/subscribe/company
+
+Subscribes a non-resident company to the Capital Gains Tax Service.
+
+### Example of usage
+
+POST /capital-gains-subscription/subscribe/company
+
+**Request Body**
+```json
+{
+    "sap": "123456789098765",
+    "contactDetailsModel": {
+        "contactName": "Joe Bloggs",
+        "telephone": "01111 111111",
+        "email": "example@example.com"
+    },
+    "contactAddress": {
+        "addressLine1": "60 Example Lane",
+        "addressLine2": "Example Region",
+        "addressLine3": "Example Town",
+        "addressLine4": "Example County",
+        "postCode": "X123 1XX",
+        "country": "DE"
+    },
+    "registeredAddress": {
+        "addressLine1": "60 Example Lane",
+        "addressLine2": "Example Region",
+        "addressLine3": "Example Town",
+        "addressLine4": "Example County",
+        "postCode": "X123 1XX",
+        "country": "DE"
+    }
+}
+```
+
+**Response**
+```json
+{
+    "cgtRef": "CGT123456789098"
+}
+```
+
+## POST /capital-gains-subscription/subscribe/agent
+
+Enrols a non-resident agent for the Capital Gains Tax Service.
+
+### Example of usage
+
+POST /capital-gains-subscription/subscribe/agent
+
+**Request Body**
+```json
+{
+    "sap": "123456789098765",
+    "arn": "JARN1234567"
+}
+```
+
+**Response**
+```
+    204 NO_CONTENT Response
+```
