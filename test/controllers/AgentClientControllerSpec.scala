@@ -18,12 +18,12 @@ package controllers
 
 import auth.AuthorisedActions
 import common.{AffinityConstants, CredentialStrengthConstants}
-import models.{AuthorisationDataModel, UserFactsModel}
+import models.{AuthorisationDataModel, SubscriptionReferenceModel, UserFactsModel}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.when
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.{contentAsString, contentType, _}
 import services.{AuthService, RegistrationSubscriptionService}
 import traits.ControllerTestSpec
 import uk.gov.hmrc.play.auth.microservice.connectors.ConfidenceLevel
@@ -58,14 +58,26 @@ class AgentClientControllerSpec extends ControllerTestSpec {
       val jsonBody = Json.toJson(userFactsModel)
       val fakeRequest = FakeRequest().withJsonBody(jsonBody)
 
-      "return a 204 on a success" in {
-        lazy val controller = setupController("", agent, subscriptionSuccess = true)
+      "if the subscription succeed -> return a success" which {
+        lazy val controller = setupController("CGT123456", agent, subscriptionSuccess = true)
         lazy val result = controller.subscribeIndividual()(fakeRequest)
 
-        await(result).header.status shouldBe 204
+        "should have a status of 200 " in {
+          await(result).header.status shouldBe 200
+        }
+
+        "is of the type json" in {
+          contentType(result) shouldBe Some("application/json")
+        }
+
+        "has a string representing the CGT reference" in {
+          lazy val data = contentAsString(result)
+          lazy val json = Json.parse(data)
+          json.as[SubscriptionReferenceModel] shouldBe SubscriptionReferenceModel("CGT123456")
+        }
       }
 
-      "return a response" which {
+      "return a response that failed" which {
         lazy val controller = setupController("", agent, subscriptionSuccess = false)
         lazy val result = controller.subscribeIndividual()(fakeRequest)
 

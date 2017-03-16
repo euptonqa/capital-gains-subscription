@@ -19,7 +19,7 @@ package controllers
 import javax.inject.{Inject, Singleton}
 
 import auth.AuthorisedActions
-import models.{ExceptionResponse, UserFactsModel}
+import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
 import services.RegistrationSubscriptionService
@@ -53,8 +53,8 @@ class AgentClientController @Inject()(actions: AuthorisedActions,
 
   //Duplicated in Subscription Controller - refactor into a common actions object?
   private def authorisedAgentAction(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[Result] = {
-    registrationSubscriptionService.subscribeGhostUser(userFactsModel).map { _ =>
-      NoContent
+    registrationSubscriptionService.subscribeGhostUser(userFactsModel).map {
+      reference => Ok(Json.toJson(SubscriptionReferenceModel(reference)))
     } recoverWith {
       case error => returnInternalServerError(error)
     }
