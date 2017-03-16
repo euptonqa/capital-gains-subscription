@@ -47,6 +47,13 @@ class RoutesSpec extends UnitSpec with WithFakeApplication {
     }
   }
 
+  "The URL for the AgentClientController's subscribeIndividual Action" should {
+    "be equal to /capital-gains-subscription/subscribe/agent/individual" in {
+      val path = controllers.routes.AgentClientController.subscribeIndividual()
+      path.url shouldBe "/capital-gains-subscription/subscribe/agent/individual"
+    }
+  }
+
   "The URL for the enrolAgent Action" should {
     "be equal to /capital-gains-subscription/subscribe/agent" in {
       val path = controllers.routes.SubscriptionController.enrolAgent()

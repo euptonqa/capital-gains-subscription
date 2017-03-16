@@ -7,3 +7,5 @@ POST       /subscribe/resident/individual           @controllers.SubscriptionCon
 POST       /subscribe/non-resident/individual-nino  @controllers.SubscriptionController.subscribeNonResidentNinoIndividual(nino: String)
 POST       /subscribe/non-resident/individual       @controllers.SubscriptionController.subscribeGhostIndividual
 POST       /subscribe/agent                         @controllers.SubscriptionController.enrolAgent
+
+POST       /subscribe/agent/individual              @controllers.AgentClientController.subscribeIndividual
