@@ -17,8 +17,10 @@
 package connectors
 
 import javax.inject.{Inject, Singleton}
+
 import config.WSHttp
 import models.AuthorisationDataModel
+import play.api.Logger
 import play.api.http.Status._
 import uk.gov.hmrc.play.auth.microservice.connectors.ConfidenceLevel
 import uk.gov.hmrc.play.config.ServicesConfig
@@ -36,16 +38,22 @@ class AuthConnector @Inject()() extends ServicesConfig {
 
   def getAuthResponse()(implicit hc: HeaderCarrier): Future[Option[AuthorisationDataModel]] = {
     val getUrl = s"""$serviceUrl/$authorityUri"""
+
+    Logger.warn("############################################# Making request to auth ####################################################")
+
     http.GET[HttpResponse](getUrl).map {
       response =>
         response.status match {
           case OK =>
+            Logger.warn("Retrieved the auth response")
             val confidenceLevel = (response.json \ "confidenceLevel").as[ConfidenceLevel]
             val affinityGroup = (response.json \ "affinityGroup").as[String]
             val credentialStrength = (response.json \ "credentialStrength").as[String]
 
             Some(AuthorisationDataModel(affinityGroup, confidenceLevel, credentialStrength))
-          case _ => None
+          case _ =>
+            Logger.warn("Failed to retrieve the auth response")
+            None
         }
     }
   }

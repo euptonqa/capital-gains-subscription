@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 
 import auth.AuthorisedActions
 import models.{ExceptionResponse, SubscriptionReferenceModel, UserFactsModel}
+import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, Result}
 import services.RegistrationSubscriptionService
@@ -43,7 +44,9 @@ class AgentClientController @Inject()(actions: AuthorisedActions,
 
   val subscribeIndividual: Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
-      case Success(value) => actions.authorisedAgentAction {
+      case Success(value) =>
+        Logger.warn("Parsed of request body")
+        actions.authorisedAgentAction {
         case true => authorisedAgentAction(value)
         case false => unauthorisedAction
       }
