@@ -33,7 +33,7 @@ import scala.concurrent.Future
 class AgentClientControllerSpec extends ControllerTestSpec {
 
   private val agent = AuthorisationDataModel(AffinityConstants.agent, ConfidenceLevel.L50, CredentialStrengthConstants.weak)
-  private val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK"))
+  private val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", "Telford", None, None, None, "UK"))
 
   def setupController(response: String, authority: AuthorisationDataModel, subscriptionSuccess: Boolean): AgentClientController = {
 
