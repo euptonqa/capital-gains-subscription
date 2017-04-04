@@ -237,7 +237,7 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
   "Calling .obtainSAPGhost" when {
 
-    val details = UserFactsModel("joe", "smith", "addressLineOne", Some("addressLineTwo"), "city", Some("county"), "postcode", "country")
+    val details = UserFactsModel("joe", "smith", "addressLineOne", "addressLineTwo", Some("city"), Some("county"), Some("postcode"), "country")
     implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
 
     "for an accepted SAP request" should {

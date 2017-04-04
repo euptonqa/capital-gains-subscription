@@ -259,7 +259,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
   "Calling the subscribeGhostIndividual action" when {
 
     "the service returns a valid string" should {
-      val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK"))
+      val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", "Telford", None, None, None, "UK"))
       val fakeRequest = FakeRequest().withJsonBody(userFactsModel)
 
       lazy val controller = setupController("CGT123456", individual, subscriptionSuccess = true)
@@ -284,7 +284,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
     }
 
     "the service returns an error" should {
-      val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK"))
+      val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", "Telford", None, None, None, "UK"))
       val fakeRequest = FakeRequest().withJsonBody(userFactsModel)
 
       lazy val controller = setupController("Error message", individual, subscriptionSuccess = false)
@@ -313,7 +313,7 @@ class SubscriptionControllerSpec extends UnitSpec with MockitoSugar with WithFak
     }
 
     "the user is unauthorised" should {
-      val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK"))
+      val userFactsModel = Json.toJson(UserFactsModel("John", "Smith", "25 Big House", "Telford", None, None, None, "UK"))
       val fakeRequest = FakeRequest().withJsonBody(userFactsModel)
 
       lazy val controller = setupController("CGT123456", organisation, subscriptionSuccess = false)
