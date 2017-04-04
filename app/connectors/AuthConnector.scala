@@ -39,13 +39,11 @@ class AuthConnector @Inject()() extends ServicesConfig {
   def getAuthResponse()(implicit hc: HeaderCarrier): Future[Option[AuthorisationDataModel]] = {
     val getUrl = s"""$serviceUrl/$authorityUri"""
 
-    Logger.warn("############################################# Making request to auth ####################################################")
-
     http.GET[HttpResponse](getUrl).map {
       response =>
         response.status match {
           case OK =>
-            Logger.warn("Retrieved the auth response")
+            Logger.info("Retrieved the auth response")
             val confidenceLevel = (response.json \ "confidenceLevel").as[ConfidenceLevel]
             val affinityGroup = (response.json \ "affinityGroup").as[String]
             val credentialStrength = (response.json \ "credentialStrength").as[String]

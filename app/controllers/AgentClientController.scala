@@ -45,7 +45,6 @@ class AgentClientController @Inject()(actions: AuthorisedActions,
   val subscribeIndividual: Action[AnyContent] = Action.async { implicit request =>
     Try(request.body.asJson.get.as[UserFactsModel]) match {
       case Success(value) =>
-        Logger.warn("Parsed of request body")
         actions.authorisedAgentAction {
         case true => authorisedAgentAction(value)
         case false => unauthorisedAction
