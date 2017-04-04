@@ -60,7 +60,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
   }
 
-  lazy val userFactsModel = UserFactsModel("John", "Smith", "25 Big House", None, "Telford", None, "ABC 404", "UK")
+  lazy val userFactsModel = UserFactsModel("John", "Smith", "25 Big House", "Telford", None, None, None, "UK")
   lazy val taxEnrolmentsBody = EnrolmentIssuerRequestModel("", Identifier("", ""))
   lazy val companySubmissionModel = CompanySubmissionModel(Some("123456789098765"), None, Some(CompanyAddressModel(None, None, None, None, Some(""), None)))
 

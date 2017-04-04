@@ -21,10 +21,10 @@ import play.api.libs.json._
 case class UserFactsModel(firstName: String,
                           lastName: String,
                           addressLineOne: String,
-                          addressLineTwo: Option[String],
-                          townOrCity: String,
+                          addressLineTwo: String,
+                          townOrCity: Option[String],
                           county: Option[String],
-                          postCode: String,
+                          postCode: Option[String],
                           country: String)
 
 object UserFactsModel {
