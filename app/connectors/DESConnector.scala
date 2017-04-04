@@ -49,16 +49,16 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   lazy val serviceUrl: String = appConfig.baseUrl("des")
   lazy val serviceContext: String = appConfig.desContextUrl
+  lazy val environment = appConfig.desEnvironment
+  lazy val token = appConfig.desToken
 
-  val environment = "test"
-  val token = "des"
   val obtainSAPUrl = "/register"
   val obtainSAPUrlGhost = "/non-resident/individual/register"
-  val urlHeaderEnvironment = "??? see srcs, found in config"
-  val urlHeaderAuthorization = "??? same as above"
+
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
   def subscribe(submissionModel: Any)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+
 
     submissionModel match {
       case individual: SubscribeIndividualModel =>
@@ -134,9 +134,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   private def createHeaderCarrier(headerCarrier: HeaderCarrier): HeaderCarrier = {
-    headerCarrier.
-      withExtraHeaders("Environment" -> urlHeaderEnvironment).
-      copy(authorization = Some(Authorization(urlHeaderAuthorization)))
+    headerCarrier.copy(authorization = Some(Authorization(s"Bearer $token"))).withExtraHeaders("Environment" -> environment)
   }
 
   private def conflictAuditMap(auditMap: Map[String, String], response: HttpResponse) =

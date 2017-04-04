@@ -28,6 +28,8 @@ trait AppConfig {
   val reportAProblemNonJSUrl: String
   val taxEnrolmentsContextUrl: String
   val desContextUrl: String
+  val desEnvironment: String
+  val desToken: String
 }
 
 @Singleton
@@ -45,4 +47,6 @@ class ApplicationConfig @Inject()(configuration: Configuration) extends AppConfi
   override lazy val reportAProblemNonJSUrl = s"$contactHost/contact/problem_reports_nonjs?service=$contactFormServiceIdentifier"
   override val taxEnrolmentsContextUrl: String = loadConfig("microservice.services.tax-enrolments.context")
   override val desContextUrl: String = loadConfig("microservice.services.des.context")
+  override val desEnvironment: String = loadConfig("microservice.services.des.environment")
+  override val desToken: String = loadConfig("microservice.services.des.token")
 }

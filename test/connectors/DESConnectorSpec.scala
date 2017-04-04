@@ -59,11 +59,9 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
   object TestDESConnector extends DESConnector(mockAppConfig, mockLoggingUtils) {
     val nino: String = createRandomNino
     override lazy val serviceUrl = "test"
-    override val environment = "test"
-    override val token = "test"
+    override lazy val environment = "test"
+    override lazy val token = "test"
     override val http: MockHttp = mockWSHttp
-    override val urlHeaderEnvironment = "??? see srcs, found in config"
-    override val urlHeaderAuthorization = "??? same as above"
   }
 
   before {
