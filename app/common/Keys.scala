@@ -26,4 +26,8 @@ object Keys {
     val cgtRefIdentifier = "CGTREF1"
     val callbackUrl = ""
   }
+
+  object DESKeys {
+    val cgtRegime = "HMRC-CGT"
+  }
 }

@@ -16,15 +16,16 @@
 
 package connectors
 
-import audit.Logging
 import javax.inject.{Inject, Singleton}
 
+import audit.Logging
 import common.AuditConstants._
+import common.Keys
 import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{JsObject, JsValue, Json, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -49,8 +50,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   lazy val serviceUrl: String = appConfig.baseUrl("des")
   lazy val serviceContext: String = appConfig.desContextUrl
-  lazy val environment = appConfig.desEnvironment
-  lazy val token = appConfig.desToken
+  lazy val environment: String = appConfig.desEnvironment
+  lazy val token: String = appConfig.desToken
 
   val obtainSAPUrl = "/register"
   val obtainSAPUrlGhost = "/non-resident/individual/register"
@@ -144,49 +145,43 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
   def obtainSAP(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$serviceContext/individual/${registerIndividualModel.nino}$obtainSAPUrl"
-    val jsonNino = Json.toJson(registerIndividualModel)
-    val response = cPOST(requestUrl, jsonNino)
+    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${registerIndividualModel.nino.nino}"
+    val registerRequestBody = Json.obj(
+      "regime" -> Keys.DESKeys.cgtRegime,
+      "requiresNameMatch" -> false,
+      "isAnAgent" -> false)
+    val response = cPOST(requestUrl, registerRequestBody)
     val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> requestUrl)
+
+    def logAndAuditHttpResponse(messageToLog: String, auditMap: Map[String, String], eventType: String, response: DesResponse) = {
+      Logger.warn(messageToLog)
+      logger.audit(transactionDESObtainSAP, auditMap, eventType)
+      response
+    }
 
     Logger.info("Made a post request to the stub with a url of " + requestUrl)
     response map {
       r =>
         r.status match {
           case OK =>
-            Logger.info("SuccessTransactionDESObtainSAP number")
-            logger.audit(transactionDESObtainSAP, auditMap, eventTypeSuccess)
-            SuccessDesResponse(r.json)
+            logAndAuditHttpResponse("SuccessTransactionDESObtainSAP number", auditMap, eventTypeSuccess, SuccessDesResponse(r.json))
           case ACCEPTED =>
-            Logger.info("AcceptTransactionDESObtainSAP number")
-            logger.audit(transactionDESObtainSAP, auditMap, eventTypeSuccess)
-            SuccessDesResponse(r.json)
+            logAndAuditHttpResponse("AcceptTransactionDESObtainSAP number", auditMap, eventTypeSuccess, SuccessDesResponse(r.json))
           case CONFLICT =>
-            Logger.warn("Error Conflict: SAP Number already in existence")
-            logger.audit(transactionDESObtainSAP, conflictAuditMap(auditMap, r), eventTypeConflict)
-            DuplicateDesResponse
+            logAndAuditHttpResponse("Error Conflict: SAP Number already in existence", auditMap, eventTypeConflict, DuplicateDesResponse)
           case BAD_REQUEST =>
-            Logger.warn(s"Error with the request ${r.body}")
-            logger.audit(transactionDESObtainSAP, failureAuditMap(auditMap, r), eventTypeFailure)
-            InvalidDesRequest(r.json)
+            logAndAuditHttpResponse(s"Error with the request ${r.body}", failureAuditMap(auditMap, r), eventTypeFailure, InvalidDesRequest(r.json))
         }
     } recover {
       case _: NotFoundException =>
-        Logger.warn("Not found exception transactionDESObtainSAP number")
-        logger.audit(transactionDESObtainSAP, auditMap, eventTypeNotFound)
-        NotFoundDesResponse
+        logAndAuditHttpResponse("Not found exception transactionDESObtainSAP number", auditMap, eventTypeNotFound, NotFoundDesResponse)
       case _: InternalServerException =>
-        Logger.warn("Internal server error transactionDESObtainSAP number")
-        logger.audit(transactionDESObtainSAP, auditMap, eventTypeInternalServerError)
-        DesErrorResponse
+        logAndAuditHttpResponse("Internal server error transactionDESObtainSAP number", auditMap, eventTypeInternalServerError, DesErrorResponse)
       case _: BadGatewayException =>
-        Logger.warn("Bad gateway status transactionDESObtainSAP number")
-        logger.audit(transactionDESObtainSAP, auditMap, eventTypeBadGateway)
-        DesErrorResponse
+        logAndAuditHttpResponse("Bad gateway status transactionDESObtainSAP number", auditMap, eventTypeBadGateway, DesErrorResponse)
       case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.printStackTrace()} transactionDESObtainSAP number")
-        logger.audit(transactionDESObtainSAP, auditMap, eventTypeGeneric)
-        DesErrorResponse
+        logAndAuditHttpResponse(
+          s"Exception of ${ex.printStackTrace()} transactionDESObtainSAP number", auditMap, eventTypeGeneric, DesErrorResponse)
     }
   }
 
