@@ -50,10 +50,13 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   lazy val serviceUrl: String = appConfig.baseUrl("des")
   lazy val serviceContext: String = appConfig.desContextUrl
 
+  def subscriptionUrl(sap: String) = s"/create/${sap}/subscription"
+
   val environment = "test"
   val token = "des"
-  val obtainSAPUrl = "/register"
-  val obtainSAPUrlGhost = "/non-resident/individual/register"
+  def registerIndividualUrl(utr: String) = s"registration/individual/${utr}"
+  def registerOrganisationUrl(utr: String) = s"registration/organisation/${utr}"
+
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
   val http: HttpGet with HttpPost with HttpPut = WSHttp
