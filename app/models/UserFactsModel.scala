@@ -25,8 +25,30 @@ case class UserFactsModel(firstName: String,
                           townOrCity: String,
                           county: Option[String],
                           postCode: String,
-                          country: String)
+                          country: String) {
+  val json: JsValue = JsObject(Seq(
+    "acknowledgementReference" -> JsString("stubbed string"),
+    "isAgent" -> JsBoolean(false),
+    "isAGroup" -> JsBoolean(false),
+    "individual" -> JsObject(Seq(
+      "firstName" -> JsString(firstName),
+      "lastName" -> JsString(lastName)
+    )),
+    "address" -> JsObject(Seq(
+      "addressLine1" -> JsString(addressLineOne),
+      "addressLine2" -> JsString(addressLineTwo.get),
+      //has to be a .get... it's non-optional
+      "addressLine3" -> JsNull,
+      "addressLine4" -> JsNull,
+      "countryCode" -> JsString("countryCodeStub")
+      //TODO: Implement countryCode matchers
+    )
+    )
+  ))
+
+}
 
 object UserFactsModel {
   implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
+
 }

@@ -55,7 +55,8 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   val environment = "test"
   val token = "des"
   def registerIndividualUrl(utr: String) = s"registration/individual/${utr}"
-  def registerOrganisationUrl(utr: String) = s"registration/organisation/${utr}"
+  def registerGhostIndividualUrl = s"registration/individual/"
+  //sends in a user facts model via JSON
 
   val urlHeaderEnvironment = "??? see srcs, found in config"
   val urlHeaderAuthorization = "??? same as above"
@@ -196,7 +197,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   def obtainSAPGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl: String = s"$serviceUrl$serviceContext$obtainSAPUrlGhost"
+    val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostIndividualUrl"
     val jsonFullDetails = Json.toJson(userFactsModel)
     val response = cPOST(requestUrl, jsonFullDetails)
     val auditMap: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)

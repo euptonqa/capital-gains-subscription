@@ -24,12 +24,34 @@ case class CompanySubmissionModel(
                                    registeredAddress: Option[CompanyAddressModel]
                                  ) {
   require(CompanySubmissionModel.validateSAP(sap), s"SAP:$sap is not valid.")
+  val ackRef = "stubbedAckRef"
+  val organisationName = "stubbedOrganisationName"
+  //TODO: Update once ackRef, organisationName is established, don't merge PR until unstubbed
+  implicit val format = s"{\"acknowledgementReference\": \"${ackRef}\"," +
+    s"\"isAnAgent\": false," +
+    s"\"isAGroup\": false," +
+    "s\"organisation\": {" +
+    s"\"organisationName\": \"${organisationName}\"" +
+    s"}" +
+    s"\"foreignAddress\": {" +
+      s"\"addressLine1\": \"${registeredAddress.get.addressLine1.get}\"," +
+      s"\"addressLine2\": \"${registeredAddress.get.addressLine2.get}\"," +
+      s"\"addressLine3\": \"${registeredAddress.get.addressLine3.getOrElse("null")}\","
+      s"\"addressLine4\": \"${registeredAddress.get.addressLine4.getOrElse("null")}\","
+  "}"
 }
 
 object CompanySubmissionModel {
   implicit val formats = Json.format[CompanySubmissionModel]
+  implicit val format = s"{\"acknowledgementReference\": \"${ackRef}\"," +
+                        s"\"isAnAgent\": false," +
+                        s"\"isAGroup\": false," +
+                        "s\"organisation\": {" +
+                          s"\"organisationName\": \"{}\""
+                        "}"
 
   def validateSAP(sap: Option[String]): Boolean = {
+    //TODO: Are we *certain* this is a valid constraint?
     sap match {
       case Some(data) => data.length.equals(15)
       case _ => true
