@@ -16,6 +16,7 @@
 
 package models
 
+import org.apache.commons.lang3.RandomStringUtils
 import play.api.libs.json._
 
 case class UserFactsModel(firstName: String,
@@ -27,7 +28,7 @@ case class UserFactsModel(firstName: String,
                           postCode: String,
                           country: String) {
   val json: JsValue = JsObject(Seq(
-    "acknowledgementReference" -> JsString("stubbed string"),
+    "acknowledgementReference" -> JsString(getUniqueAckNo),
     "isAgent" -> JsBoolean(false),
     "isAGroup" -> JsBoolean(false),
     "individual" -> JsObject(Seq(
@@ -41,14 +42,18 @@ case class UserFactsModel(firstName: String,
       "addressLine3" -> JsNull,
       "addressLine4" -> JsNull,
       "countryCode" -> JsString("countryCodeStub")
-      //TODO: Implement countryCode matchers
     )
     )
   ))
 
+  def getUniqueAckNo: String = {
+    val length = 32
+    val nanoTime = System.nanoTime()
+    val restChars = length - nanoTime.toString.length
+    val randomChars = RandomStringUtils.randomAlphanumeric(restChars)
+    randomChars + nanoTime
 }
 
 object UserFactsModel {
   implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
-
 }
