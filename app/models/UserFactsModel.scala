@@ -16,7 +16,7 @@
 
 package models
 
-import org.apache.commons.lang3.RandomStringUtils
+import common.DesUtils._
 import play.api.libs.json._
 
 case class UserFactsModel(firstName: String,
@@ -26,18 +26,20 @@ case class UserFactsModel(firstName: String,
                           townOrCity: String,
                           county: Option[String],
                           postCode: String,
-                          country: String) {
-  val json: JsValue = JsObject(Seq(
+                          country: String)
+
+object UserFactsModel {
+  implicit val json: UserFactsModel => JsValue = model => JsObject(Seq(
     "acknowledgementReference" -> JsString(getUniqueAckNo),
     "isAgent" -> JsBoolean(false),
     "isAGroup" -> JsBoolean(false),
     "individual" -> JsObject(Seq(
-      "firstName" -> JsString(firstName),
-      "lastName" -> JsString(lastName)
+      "firstName" -> JsString(model.firstName),
+      "lastName" -> JsString(model.lastName)
     )),
     "address" -> JsObject(Seq(
-      "addressLine1" -> JsString(addressLineOne),
-      "addressLine2" -> JsString(addressLineTwo.get),
+      "addressLine1" -> JsString(model.addressLineOne),
+      "addressLine2" -> JsString(model.addressLineTwo.getOrElse("")),
       //has to be a .get... it's non-optional
       "addressLine3" -> JsNull,
       "addressLine4" -> JsNull,
@@ -45,15 +47,4 @@ case class UserFactsModel(firstName: String,
     )
     )
   ))
-
-  def getUniqueAckNo: String = {
-    val length = 32
-    val nanoTime = System.nanoTime()
-    val restChars = length - nanoTime.toString.length
-    val randomChars = RandomStringUtils.randomAlphanumeric(restChars)
-    randomChars + nanoTime
-}
-
-object UserFactsModel {
-  implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
 }
