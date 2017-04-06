@@ -113,70 +113,70 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
     "return success with an OK" in {
       val response = Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
     }
 
     "return success with an accepted response" in {
       val response = Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
     }
 
     "return success with a conflicted submission" should {
       val response = Future.successful(HttpResponse(CONFLICT, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe DuplicateDesResponse
     }
 
     "return a BAD_REQUEST with an invalid safeId and a valid reference" should {
       val response = Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe InvalidDesRequest(Json.obj("reason" -> "error"))
     }
 
     "return a BAD_REQUEST with a valid safeID and an invalid reference" should {
       val response = Future.successful(HttpResponse(BAD_REQUEST, responseJson = Some(Json.obj("reason" -> "error"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe InvalidDesRequest(Json.obj("reason" -> "error"))
     }
 
     "return a NOT_FOUND error with an reference containing 'not found'" should {
       val response = Future.successful(HttpResponse(NOT_FOUND, responseJson = Some(Json.obj("reason" -> "not found"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe DesErrorResponse
     }
 
     "return a SERVICE UNAVAILABLE error with an reference containing 'serviceunavailable'" should {
       val response = Future.successful(HttpResponse(SERVICE_UNAVAILABLE, responseJson = Some(Json.obj("reason" -> "serviceunavailable"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe DesErrorResponse
     }
 
     "return a INTERNAL SERVER ERROR with an reference containing 'servererror'" should {
       val response = Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.obj("reason" -> "servererror"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe DesErrorResponse
     }
 
     "return a INTERNAL SERVER ERROR with an reference containing 'sapnumbermissing'" should {
       val response = Future.successful(HttpResponse(INTERNAL_SERVER_ERROR, responseJson = Some(Json.obj("reason" -> "sapnumbermissing"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe DesErrorResponse
     }
 
     "return a SERVICE UNAVAILABLE ERROR with an reference containing 'notprocessed'" should {
       val response = Future.successful(HttpResponse(SERVICE_UNAVAILABLE, responseJson = Some(Json.obj("reason" -> "notprocessed"))))
-      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+      val result = await(TestDESConnector.handleSubscriptionForCGTResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
 
       result shouldBe DesErrorResponse
     }

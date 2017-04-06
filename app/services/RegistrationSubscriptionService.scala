@@ -32,18 +32,19 @@ import scala.concurrent.Future
 @Singleton
 class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
+  //TODO: Tomorrows job is to update this side for the registration component and then finish the subscription.
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
     Logger.info("Issuing a call to DES (stub) to register and subscribe known user")
 
     val filterDuplicates: DesResponse => Future[DesResponse] = {
       case DuplicateDesResponse =>
-        Logger.info("Making a request for users sap as nino used already has a BP entry")
-        desConnector.getExistingSap(RegisterIndividualModel(Nino(nino)))
+        desConnector.getSAPForExistingBP(RegisterIndividualModel(Nino(nino)))
       case x => Future.successful(x)
     }
 
     for {
-      sapResponse <- desConnector.obtainSAP(RegisterIndividualModel(Nino(nino))).flatMap(filterDuplicates)
+      sapResponse <- desConnector.registerIndividualWithNino(RegisterIndividualModel(Nino(nino))).flatMap(filterDuplicates)
+      //TODO: this is the wrong place to do this
       taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
       cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
@@ -52,7 +53,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
     Logger.info("Issuing a call to DES to register and subscribe ghost user")
     for {
-      sapResponse <- desConnector.obtainSAPGhost(userFactsModel)
+      sapResponse <- desConnector.registerIndividualGhost(userFactsModel)
       cgtRef1 <- fetchDESResponse(sapResponse)
       taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
       cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
@@ -94,7 +95,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   //TODO: I suggest refactoring this response at the connecctor level to respond with the SuccessDesResponse with a meaningful model in it.
   private def fetchDESRegisterResponse(response: DesResponse) = {
     response match {
-      case SuccessDesResponse(data) => Future.successful(extractSapFromDesSuccessful(data))
+      case SuccessfulRegistrationResponse(data) => Future.successful(extractSapFromDesSuccessful(data))
       case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
@@ -102,16 +103,16 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
   //This is here to keep the subscribe method as-is for now...
   private def fetchDESResponse(response: DesResponse) = {
     response match {
-      case SuccessDesResponse(data) => Future.successful(data.as[String])
+      case SuccessfulRegistrationResponse(data) => Future.successful(data.as[String])
       case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
-
-  //TODO: this should DEFINETLEY be at connector level but to avoid the large re-work that would require I'm putting it here for now
-  private def extractSapFromDesSuccessful(body: JsValue) = {
-    //TODO when this is moved to the connector it should also be replaced by a model, not just a string
-    (body \ "safeId").as[String]
-  }
+//
+//  //TODO: this should DEFINETLEY be at connector level but to avoid the large re-work that would require I'm putting it here for now
+//  private def extractSapFromDesSuccessful(body: JsValue) = {
+//    //TODO when this is moved to the connector it should also be replaced by a model, not just a string
+//    (body \ "safeId").as[String]
+//  }
 
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
     response match {
