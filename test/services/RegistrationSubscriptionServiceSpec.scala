@@ -36,8 +36,9 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
   lazy val mockTaxEnrolmentsConnector: TaxEnrolmentsConnector = mock[TaxEnrolmentsConnector]
 
   def setupMock(cgtRef: DesResponse, issuerResponse: TaxEnrolmentsResponse, subscriberResponse: TaxEnrolmentsResponse,
-                sap: Option[DesResponse] = Some(SuccessDesResponse(Json.toJson("123456789098765"))),
-                getExistingSapResponse: Option[DesResponse] = Some(SuccessDesResponse(Json.toJson("123456789098765")))): RegistrationSubscriptionService = {
+                sap: Option[DesResponse] = Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765"))),
+                getExistingSapResponse: Option[DesResponse] = Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))):
+  RegistrationSubscriptionService = {
 
     when(mockDESConnector.obtainSAP(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
       .thenReturn(Future.successful(sap.get))
@@ -105,7 +106,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse
       )
 
-      lazy val result = await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
+      lazy val result = await(testService.subscribe(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"
@@ -149,7 +150,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
+        await(testService.subscribe(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
@@ -165,7 +166,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
+        await(testService.subscribe(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
@@ -181,7 +182,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.subscribe(SuccessDesResponse(Json.toJson("123456789098765")), taxEnrolmentsBody))
+        await(testService.subscribe(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
@@ -197,7 +198,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
-        Some(SuccessDesResponse(Json.toJson("123456789098765")))
+        Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))
       )
 
       lazy val result = await(testService.subscribeKnownUser("AB123456B"))
@@ -266,7 +267,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
-        Some(SuccessDesResponse(Json.toJson("123456789098765")))
+        Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))
       )
 
       lazy val result = await(testService.subscribeGhostUser(userFactsModel))
@@ -301,7 +302,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
         SuccessTaxEnrolmentsResponse,
         SuccessTaxEnrolmentsResponse,
-        Some(SuccessDesResponse(Json.toJson("123456789098765")))
+        Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))
       )
 
       lazy val result = await(testService.subscribeOrganisationUser(companySubmissionModel))

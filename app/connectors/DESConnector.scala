@@ -60,7 +60,6 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   def subscribe(submissionModel: Any)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
-
     submissionModel match {
       case individual: SubscribeIndividualModel =>
         Logger.info("Made a post request to the stub with an individual subscribers sap of " + individual.sap)
@@ -144,14 +143,14 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   private def failureAuditMap(auditMap: Map[String, String], response: HttpResponse) =
     auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
-  def obtainSAP(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
-    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${registerIndividualModel.nino.nino}"
+  def obtainSAP(model: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
     val registerRequestBody = Json.obj(
       "regime" -> Keys.DESKeys.cgtRegime,
       "requiresNameMatch" -> false,
       "isAnAgent" -> false)
     val response = cPOST(requestUrl, registerRequestBody)
-    val auditMap: Map[String, String] = Map("Nino" -> registerIndividualModel.nino.nino, "Url" -> requestUrl)
+    val auditMap: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> requestUrl)
 
     def logAndAuditHttpResponse(messageToLog: String, auditMap: Map[String, String], eventType: String, response: DesResponse) = {
       Logger.warn(messageToLog)
@@ -165,8 +164,6 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         r.status match {
           case OK =>
             logAndAuditHttpResponse("SuccessTransactionDESObtainSAP number", auditMap, eventTypeSuccess, SuccessDesResponse(r.json))
-          case ACCEPTED =>
-            logAndAuditHttpResponse("AcceptTransactionDESObtainSAP number", auditMap, eventTypeSuccess, SuccessDesResponse(r.json))
           case CONFLICT =>
             logAndAuditHttpResponse("Error Conflict: SAP Number already in existence", auditMap, eventTypeConflict, DuplicateDesResponse)
           case BAD_REQUEST =>
@@ -232,6 +229,7 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
+  //TODO: review this entire call as there doesn't seem to be an endpoint for it at the moment and team ITSA have discovered it's never triggered.
   def getExistingSap(registerIndividualModel: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
     val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/details"
     val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", registerIndividualModel.nino.nino)))

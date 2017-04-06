@@ -21,7 +21,7 @@ import javax.inject.{Inject, Singleton}
 import connectors._
 import models._
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
 import common.Keys.TaxEnrolmentsKeys
@@ -42,12 +42,8 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
       case x => Future.successful(x)
     }
 
-    def handleResponse(): Future[DesResponse] = {
-      desConnector.obtainSAP(RegisterIndividualModel(Nino(nino))).flatMap(filterDuplicates)
-    }
-
     for {
-      sapResponse <- handleResponse()
+      sapResponse <- desConnector.obtainSAP(RegisterIndividualModel(Nino(nino))).flatMap(filterDuplicates)
       taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
       cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
     } yield cgtRef
@@ -65,7 +61,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
 
   private[services] def subscribe(sapResponse: DesResponse, taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
     for {
-      sap <- fetchDESResponse(sapResponse)
+      sap <- fetchDESRegisterResponse(sapResponse)
       subscribeResponse <- desConnector.subscribe(SubscribeIndividualModel(sap))
       cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, sap)
     } yield cgtRef
@@ -95,12 +91,26 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
     } yield cgtRef
   }
 
-  //TODO: Refactor into two seperate responses (subscription ref and sap)
+  //TODO: I suggest refactoring this response at the connecctor level to respond with the SuccessDesResponse with a meaningful model in it.
+  private def fetchDESRegisterResponse(response: DesResponse) = {
+    response match {
+      case SuccessDesResponse(data) => Future.successful(extractSapFromDesSuccessful(data))
+      case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
+    }
+  }
+
+  //This is here to keep the subscribe method as-is for now...
   private def fetchDESResponse(response: DesResponse) = {
     response match {
       case SuccessDesResponse(data) => Future.successful(data.as[String])
       case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
     }
+  }
+
+  //TODO: this should DEFINETLEY be at connector level but to avoid the large re-work that would require I'm putting it here for now
+  private def extractSapFromDesSuccessful(body: JsValue) = {
+    //TODO when this is moved to the connector it should also be replaced by a model, not just a string
+    (body \ "safeId").as[String]
   }
 
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
