@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{JsValue, Json, OFormat}
 
 case class CompanySubmissionModel(
                                    sap: Option[String],
@@ -29,9 +29,22 @@ case class CompanySubmissionModel(
 object CompanySubmissionModel {
   implicit val formats: OFormat[CompanySubmissionModel] = Json.format[CompanySubmissionModel]
 
+  implicit val toEtmpSubscription: CompanySubmissionModel => JsValue = model => {
+    Json.obj(
+      "addressDetail" -> Json.obj(
+        "line1" -> model.registeredAddress.get.addressLine1.get,
+        "line2" -> model.registeredAddress.get.addressLine2.get,
+        "line3" -> model.registeredAddress.get.addressLine3,
+        "line4" -> model.registeredAddress.get.addressLine4,
+        "postalCode" -> model.registeredAddress.get.postCode,
+        "countryCode" -> model.registeredAddress.get.country.get
+      )
+    )
+  }
+
   def validateSAP(sap: Option[String]): Boolean = {
     sap match {
-      case Some(data) => data.length.equals(15)
+      case Some(data) => data.length == 15
       case _ => true
     }
   }

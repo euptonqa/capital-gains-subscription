@@ -21,6 +21,10 @@ import java.util.UUID
 import audit.Logging
 import common.Utilities.createRandomNino
 import config.ApplicationConfig
+<<<<<<< HEAD
+=======
+import helpers.TestHelper._
+>>>>>>> Updated subcscription call for companies to match Schemas.
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -87,7 +91,36 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
     "return a DuplicateDesResponse when the connection returns a 409" in {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())
         (ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+<<<<<<< HEAD
         .thenReturn(Future.successful(HttpResponse(CONFLICT)))
+=======
+        .thenReturn(Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid)))))
+
+      val result = await(TestDESConnector.subscribe(CompanySubmissionModel(Some(dummyValidSafeID), None,
+        Some(CompanyAddressModel(Some(""), Some(""), None, None, Some(""), Some(""))))))
+
+      result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
+    }
+  }
+
+  "Calling .handleResponse" should {
+
+    implicit val hc = new HeaderCarrier(sessionId = Some(SessionId(s"session-${UUID.randomUUID}")))
+
+    "return success with an OK" in {
+      val response = Future.successful(HttpResponse(OK, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid))))
+      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+
+      result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
+    }
+
+    "return success with an accepted response" in {
+      val response = Future.successful(HttpResponse(ACCEPTED, responseJson = Some(Json.obj("Submission" -> dummySubscriptionRequestValid))))
+      val result = await(TestDESConnector.handleResponse(response, Map("Safe Id" -> "", "Url" -> ""), ""))
+
+      result shouldBe SuccessDesResponse(Json.obj("Submission" -> dummySubscriptionRequestValid))
+    }
+>>>>>>> Updated subcscription call for companies to match Schemas.
 
       val result = await(TestDesConnector.registerIndividualWithNino(RegisterIndividualModel(dummyNino)))
 

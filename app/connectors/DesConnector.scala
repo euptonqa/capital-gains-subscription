@@ -25,7 +25,7 @@ import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -209,7 +209,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     //TODO: Abstract this to app-config
     val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
 
-    val response = cPOST(requestUrl, Json.toJson(companySubmissionModel))
+    val response = cPOST[JsValue, HttpResponse](requestUrl, companySubmissionModel)
     val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
 
     response map { r =>
