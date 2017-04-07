@@ -18,19 +18,19 @@ package services
 
 import javax.inject.{Inject, Singleton}
 
+import common.Keys.TaxEnrolmentsKeys
 import connectors._
 import models._
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.http.HeaderCarrier
-import common.Keys.TaxEnrolmentsKeys
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 @Singleton
-class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
+class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
   //TODO: Tomorrows job is to update this side for the registration component and then finish the subscription.
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
@@ -107,12 +107,13 @@ class RegistrationSubscriptionService @Inject()(desConnector: DESConnector, taxE
       case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
     }
   }
-//
-//  //TODO: this should DEFINETLEY be at connector level but to avoid the large re-work that would require I'm putting it here for now
-//  private def extractSapFromDesSuccessful(body: JsValue) = {
-//    //TODO when this is moved to the connector it should also be replaced by a model, not just a string
-//    (body \ "safeId").as[String]
-//  }
+
+  //
+  //  //TODO: this should DEFINETLEY be at connector level but to avoid the large re-work that would require I'm putting it here for now
+  //  private def extractSapFromDesSuccessful(body: JsValue) = {
+  //    //TODO when this is moved to the connector it should also be replaced by a model, not just a string
+  //    (body \ "safeId").as[String]
+  //  }
 
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
     response match {

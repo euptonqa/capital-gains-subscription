@@ -42,7 +42,7 @@ case class DesErrorResponse(message: JsValue) extends DesResponse
 case object DuplicateDesResponse extends DesResponse
 
 @Singleton
-class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) extends HttpErrorFunctions with ServicesConfig {
+class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) extends HttpErrorFunctions with ServicesConfig {
 
   lazy val serviceUrl: String = appConfig.baseUrl("des")
   lazy val serviceContext: String = appConfig.desContextUrl
@@ -74,28 +74,25 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     headerCarrier.copy(authorization = Some(Authorization(s"Bearer $token"))).withExtraHeaders("Environment" -> environment)
   }
 
-  private def conflictAuditMap(auditMap: Map[String, String], response: HttpResponse) =
-    auditMap ++ Map("Conflict reason" -> response.body, "Status" -> response.status.toString)
+  private def conflictAuditMap(auditDetails: Map[String, String], response: HttpResponse) =
+    auditDetails ++ Map("Conflict reason" -> response.body, "Status" -> response.status.toString)
 
-  private def failureAuditMap(auditMap: Map[String, String], response: HttpResponse) =
-    auditMap ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
+  private def failureAuditMap(auditDetails: Map[String, String], response: HttpResponse) =
+    auditDetails ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
   //Feels dirty but this is a function called purely for it's side effects...
-  private def logAndAuditHttpResponse(transactionIdentifier: String, messageToLog: String, auditMap: Map[String, String], eventType: String) = {
+  private def logAndAuditHttpResponse(transactionIdentifier: String, messageToLog: String, auditDetails: Map[String, String], eventType: String) = {
     Logger.warn(messageToLog)
-    logger.audit(transactionIdentifier, auditMap, eventType)
+    logger.audit(transactionIdentifier, auditDetails, eventType)
   }
 
-  def handleRegistrationResponse(response: HttpResponse, transactionId: String, auditMap: Map[String, String]): DesResponse = response.status match {
-    case OK =>
-      logAndAuditHttpResponse(transactionId, "Successful registration of known user", auditMap, eventTypeSuccess)
-      SuccessfulRegistrationResponse((response.json \ "safeId").as[RegisterUserModel])
+  def handleRegistrationErrorResponse(response: HttpResponse, transactionId: String, auditDetails: Map[String, String]): DesResponse = response.status match {
     case CONFLICT =>
-      logAndAuditHttpResponse(transactionId, "Duplicate BP found", conflictAuditMap(auditMap, response), eventTypeConflict)
+      logAndAuditHttpResponse(transactionId, "Duplicate BP found", conflictAuditMap(auditDetails, response), eventTypeConflict)
       DuplicateDesResponse
     case errorStatus =>
       logAndAuditHttpResponse(transactionId, s"Registration failed - error code: $errorStatus body: ${response.body}",
-        failureAuditMap(auditMap, response), eventTypeFailure)
+        failureAuditMap(auditDetails, response), eventTypeFailure)
       DesErrorResponse(response.json)
   }
 
@@ -109,12 +106,19 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       "requiresNameMatch" -> false,
       "isAnAgent" -> false)
     val response = cPOST(requestUrl, registerRequestBody)
-    val auditMap: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> requestUrl)
+    val auditDetails: Map[String, String] = Map("RequestBody" -> registerRequestBody.toString(), "Url" -> requestUrl)
 
     Logger.info("Made a post request to the stub with a url of " + requestUrl)
 
     response map {
-      r => handleRegistrationResponse(r, transactionDESRegisterKnownUser, auditMap)
+      r =>
+        r.status match {
+          case OK =>
+            logAndAuditHttpResponse(transactionDESRegisterKnownUser, "Successful registration of known user", auditDetails, eventTypeSuccess)
+            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
+          case _ =>
+            handleRegistrationErrorResponse(r, transactionDESRegisterKnownUser, auditDetails)
+        }
     }
   }
 
@@ -126,12 +130,17 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostUrl"
     val jsonFullDetails = Json.toJson(userFactsModel)
     val response = http.POST(requestUrl, jsonFullDetails)
-    val auditMap: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
+    val auditDetails: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
 
     Logger.info("Made a post request to the stub with a url of " + requestUrl)
 
     response map {
-      r => handleRegistrationResponse(r, transactionDESRegisterGhost, auditMap)
+      r =>
+        r.status match {
+          case OK =>
+            logAndAuditHttpResponse(transactionDESRegisterGhost, "Successful registration of ghost user", auditDetails, eventTypeSuccess)
+            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
+          case _ => handleRegistrationErrorResponse(r, transactionDESRegisterGhost, auditDetails)
     }
   }
 
@@ -139,18 +148,18 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   def getSAPForExistingBP(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
     val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
     val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", model.nino.nino)))
-    val auditMap: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> getSubscriptionUrl)
+    val auditDetails: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> getSubscriptionUrl)
     Logger.info("Made a post request to the stub with a url of " + getSubscriptionUrl)
 
     response map {
       r =>
         r.status match {
-          case OK => logAndAuditHttpResponse(transactionDESGetExistingSAP, "Successful request for existing SAP", auditMap, eventTypeSuccess)
+          case OK => logAndAuditHttpResponse(transactionDESGetExistingSAP, "Successful request for existing SAP", auditDetails, eventTypeSuccess)
             SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
           case errorStatus =>
             logAndAuditHttpResponse(
               transactionDESGetExistingSAP, s"Retrieve exisitng BP failed - error code: $errorStatus body: ${r.body}",
-              failureAuditMap(auditMap, r), eventTypeFailure)
+              failureAuditMap(auditDetails, r), eventTypeFailure)
             DesErrorResponse(r.json)
         }
     }
@@ -165,56 +174,56 @@ class DESConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
         val requestUrl: String = s"$serviceUrl$serviceContext/individual/${individual.sap}/subscribe"
         val response = cPOST(requestUrl, Json.toJson(individual))
-        val auditMap: Map[String, String] = Map("Safe Id" -> individual.sap, "Url" -> requestUrl)
-        handleSubscriptionForCGTResponse(response, auditMap, individual.sap)
+        val auditDetails: Map[String, String] = Map("Safe Id" -> individual.sap, "Url" -> requestUrl)
+        handleSubscriptionForCGTResponse(response, auditDetails, individual.sap)
 
       case company: CompanySubmissionModel =>
         Logger.info("Made a post request to the stub with a company subscribers sap of " + company.sap.get)
 
         val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
         val response = cPOST(requestUrl, Json.toJson(company))
-        val auditMap: Map[String, String] = Map("Safe Id" -> company.sap.get, "Url" -> requestUrl)
-        handleSubscriptionForCGTResponse(response, auditMap, company.sap.get)
+        val auditDetails: Map[String, String] = Map("Safe Id" -> company.sap.get, "Url" -> requestUrl)
+        handleSubscriptionForCGTResponse(response, auditDetails, company.sap.get)
     }
   }
 
-  def handleSubscriptionForCGTResponse(response: Future[HttpResponse], auditMap: Map[String, String], reference: String)
+  def handleSubscriptionForCGTResponse(response: Future[HttpResponse], auditDetails: Map[String, String], reference: String)
                                       (implicit hc: HeaderCarrier): Future[DesResponse] = {
     response map { r =>
       r.status match {
         case OK =>
           Logger.info(s"Successful DES submission for $reference")
-          logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
+          logger.audit(transactionDESSubscribe, auditDetails, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case CONFLICT =>
           Logger.warn("Error Conflict: SAP Number already in existence")
-          logger.audit(transactionDESSubscribe, conflictAuditMap(auditMap, r), eventTypeConflict)
+          logger.audit(transactionDESSubscribe, conflictAuditMap(auditDetails, r), eventTypeConflict)
           DuplicateDesResponse
         case ACCEPTED =>
           Logger.info(s"Accepted DES submission for $reference")
-          logger.audit(transactionDESSubscribe, auditMap, eventTypeSuccess)
+          logger.audit(transactionDESSubscribe, auditDetails, eventTypeSuccess)
           SuccessDesResponse(r.json)
         case BAD_REQUEST =>
           Logger.warn(s"Error with the request ${r.body}")
-          logger.audit(transactionDESSubscribe, failureAuditMap(auditMap, r), eventTypeFailure)
+          logger.audit(transactionDESSubscribe, failureAuditMap(auditDetails, r), eventTypeFailure)
           InvalidDesRequest(r.json)
       }
     } recover {
       case _: NotFoundException =>
         Logger.warn(s"Not found for $reference")
-        logger.audit(transactionDESSubscribe, auditMap, eventTypeNotFound)
+        logger.audit(transactionDESSubscribe, auditDetails, eventTypeNotFound)
         NotFoundDesResponse
       case _: InternalServerException =>
         Logger.warn(s"Internal server error for $reference")
-        logger.audit(transactionDESSubscribe, auditMap, eventTypeInternalServerError)
+        logger.audit(transactionDESSubscribe, auditDetails, eventTypeInternalServerError)
         DesErrorResponse
       case _: BadGatewayException =>
         Logger.warn(s"Bad gateway status for $reference")
-        logger.audit(transactionDESSubscribe, auditMap, eventTypeBadGateway)
+        logger.audit(transactionDESSubscribe, auditDetails, eventTypeBadGateway)
         DesErrorResponse
       case ex: Exception =>
         Logger.warn(s"Exception of ${ex.printStackTrace()} for $reference")
-        logger.audit(transactionDESSubscribe, auditMap, eventTypeGeneric)
+        logger.audit(transactionDESSubscribe, auditDetails, eventTypeGeneric)
         DesErrorResponse
     }
   }

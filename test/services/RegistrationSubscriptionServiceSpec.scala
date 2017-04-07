@@ -32,7 +32,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
   implicit val hc: HeaderCarrier = mock[HeaderCarrier]
   implicit val ec: ExecutionContext = mock[ExecutionContext]
-  lazy val mockDESConnector: DESConnector = mock[DESConnector]
+  lazy val mockDESConnector: DesConnector = mock[DesConnector]
   lazy val mockTaxEnrolmentsConnector: TaxEnrolmentsConnector = mock[TaxEnrolmentsConnector]
 
   def setupMock(cgtRef: DesResponse, issuerResponse: TaxEnrolmentsResponse, subscriberResponse: TaxEnrolmentsResponse,
