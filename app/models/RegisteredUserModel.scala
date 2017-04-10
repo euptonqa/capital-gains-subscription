@@ -16,4 +16,4 @@
 
 package models
 
-case class RegisterUserModel(safeId: String)
+case class RegisteredUserModel(safeId: String)

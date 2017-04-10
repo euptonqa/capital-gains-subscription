@@ -25,7 +25,7 @@ import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -35,7 +35,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 sealed trait DesResponse
 
-case class SuccessfulRegistrationResponse(response: RegisterUserModel) extends DesResponse
+case class SuccessfulRegistrationResponse(response: RegisteredUserModel) extends DesResponse
+
 case class SuccessfulSubscriptionResponse(response: SubscriptionReferenceModel) extends DesResponse
 
 //Not sure if this would be better responding with an error model that holds the status code and the message?
@@ -119,7 +120,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         r.status match {
           case OK =>
             logAndAuditHttpResponse(transactionDESRegisterKnownUser, "Successful registration of known user", auditDetails, eventTypeSuccess)
-            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
+            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
           case _ =>
             handleRegistrationErrorResponse(r, transactionDESRegisterKnownUser, auditDetails)
         }
@@ -143,7 +144,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         r.status match {
           case OK =>
             logAndAuditHttpResponse(transactionDESRegisterGhost, "Successful registration of ghost user", auditDetails, eventTypeSuccess)
-            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
+            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
           case _ => handleRegistrationErrorResponse(r, transactionDESRegisterGhost, auditDetails)
         }
     }
@@ -151,7 +152,10 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   //TODO: review this entire call as there doesn't seem to be an endpoint for it at the moment and team ITSA have discovered it's never triggered.
   def getSAPForExistingBP(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+
+    //TODO: Abstract this to app-config
     val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
+
     val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", model.nino.nino)))
     val auditDetails: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> getSubscriptionUrl)
     Logger.info("Made a post request to the stub with a url of " + getSubscriptionUrl)
@@ -160,7 +164,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       r =>
         r.status match {
           case OK => logAndAuditHttpResponse(transactionDESGetExistingSAP, "Successful request for existing SAP", auditDetails, eventTypeSuccess)
-            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
+            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
           case errorStatus =>
             logAndAuditHttpResponse(
               transactionDESGetExistingSAP, s"Retrieve exisitng BP failed - error code: $errorStatus body: ${r.body}",
@@ -175,7 +179,9 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
     Logger.info("Made a post request to the stub with an individual subscribers sap of " + subscribeIndividualModel.sap)
 
-    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeIndividualModel.sap}/subscribe"
+    //TODO: Abstract this to app-config
+    val requestUrl: String = s"$serviceUrl$serviceContext/create/${subscribeIndividualModel.sap}/subscription"
+
     val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
     val auditDetails: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
 
@@ -195,11 +201,13 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   def subscribeCompanyForCgt(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
-    Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap.get)
+    Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap)
 
-    val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
+    //TODO: Abstract this to app-config
+    val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
+
     val response = cPOST(requestUrl, Json.toJson(companySubmissionModel))
-    val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
+    val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap, "Url" -> requestUrl)
 
     response map { r =>
       r.status match {

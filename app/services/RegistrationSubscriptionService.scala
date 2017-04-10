@@ -34,38 +34,48 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
 
   //TODO: Tomorrows job is to update this side for the registration component and then finish the subscription.
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
+
+    val registerModel = RegisterIndividualModel(Nino(nino))
+
     Logger.info("Issuing a call to DES (stub) to register and subscribe known user")
 
-    val filterDuplicates: DesResponse => Future[DesResponse] = {
-      case DuplicateDesResponse =>
-        desConnector.getSAPForExistingBP(RegisterIndividualModel(Nino(nino)))
-      case x => Future.successful(x)
+    def retrieveExistingUsersSap(): Future[RegisteredUserModel] = {
+      desConnector.getSAPForExistingBP(registerModel).map {
+        case SuccessfulRegistrationResponse(data) => data
+        case DesErrorResponse(message) => throw new Exception(message)
+      }
+    }
+
+    def registerKnownIndividual(): Future[RegisteredUserModel] = {
+      desConnector.registerIndividualWithNino(registerModel).flatMap {
+        case SuccessfulRegistrationResponse(data) => Future.successful(data)
+        case DuplicateDesResponse => retrieveExistingUsersSap()
+        case DesErrorResponse(message) => throw new Exception(message)
+      }
     }
 
     for {
-      sapResponse <- desConnector.registerIndividualWithNino(RegisterIndividualModel(Nino(nino))).flatMap(filterDuplicates)
-      //TODO: this is the wrong place to do this
-      taxEnrolmentsBody <- taxEnrolmentIssuerKnownUserBody(nino)
-      cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
+      registeredIndividualModel <- registerKnownIndividual()
+      subscribedUserModel <- createSubscription(registeredIndividualModel)
+      //Enrolments goes here
     } yield cgtRef
   }
 
-  def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
-    Logger.info("Issuing a call to DES to register and subscribe ghost user")
-    for {
-      sapResponse <- desConnector.registerIndividualGhost(userFactsModel)
-      cgtRef1 <- fetchDESResponse(sapResponse)
-      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
-      cgtRef <- subscribe(sapResponse, taxEnrolmentsBody)
-    } yield cgtRef
-  }
+//  def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
+//    Logger.info("Issuing a call to DES to register and subscribe ghost user")
+//    for {
+//      sapResponse <- desConnector.registerIndividualGhost(userFactsModel)
+//      cgtRef1 <- fetchDESResponse(sapResponse)
+//      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
+//      cgtRef <- createSubscription(sapResponse, taxEnrolmentsBody)
+//    } yield cgtRef
+//  }
 
-  private[services] def subscribe(sapResponse: DesResponse, taxEnrolmentsBody: EnrolmentIssuerRequestModel)(implicit hc: HeaderCarrier): Future[String] = {
-    for {
-      sap <- fetchDESRegisterResponse(sapResponse)
-      subscribeResponse <- desConnector.subscribe(SubscribeIndividualModel(sap))
-      cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, sap)
-    } yield cgtRef
+  def createSubscription(registeredUser: RegisteredUserModel)(implicit hc: HeaderCarrier): Future[SubscriptionReferenceModel] = {
+    desConnector.subscribeIndividualForCgt(SubscribeIndividualModel(registeredUser.safeId)).map {
+      case SuccessfulSubscriptionResponse(data) => data
+      case DesErrorResponse(message) => throw new Exception(message)
+    }
   }
 
   def subscribeOrganisationUser(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[String] = {
@@ -80,9 +90,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     } yield cgtRef
   }
 
-  private def handleSubscriptionResponse(desResponse: DesResponse,
-                                         taxEnrolmentsBody: EnrolmentIssuerRequestModel,
-                                         sap: String)(implicit hc: HeaderCarrier): Future[String] = {
+  private def enrolUserToGG(subscribedIndividual: String)(implicit hc: HeaderCarrier): Future[String] = {
     for {
       cgtRef <- fetchDESResponse(desResponse)
       enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(taxEnrolmentsBody))
