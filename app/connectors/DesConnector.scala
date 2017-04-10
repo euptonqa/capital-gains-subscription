@@ -90,16 +90,16 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     Logger.warn(messageToLog)
     logger.audit(transactionIdentifier, auditDetails, eventType)
   }
-
-  def handleRegistrationErrorResponse(response: HttpResponse, transactionId: String, auditDetails: Map[String, String]): DesResponse = response.status match {
-    case CONFLICT =>
-      logAndAuditHttpResponse(transactionId, "Duplicate BP found", conflictAuditMap(auditDetails, response), eventTypeConflict)
-      DuplicateDesResponse
-    case errorStatus =>
-      logAndAuditHttpResponse(transactionId, s"Registration failed - error code: $errorStatus body: ${response.body}",
-        failureAuditMap(auditDetails, response), eventTypeFailure)
-      DesErrorResponse((response.json \ "reason").as[String])
-  }
+// FOR NOW
+//  def handleRegistrationErrorResponse(response: HttpResponse, transactionId: String, auditDetails: Map[String, String]): DesResponse = response.status match {
+//    case CONFLICT =>
+//      logAndAuditHttpResponse(transactionId, "Duplicate BP found", conflictAuditMap(auditDetails, response), eventTypeConflict)
+//      DuplicateDesResponse
+//    case errorStatus =>
+//      logAndAuditHttpResponse(transactionId, s"Registration failed - error code: $errorStatus body: ${response.body}",
+//        failureAuditMap(auditDetails, response), eventTypeFailure)
+//      DesErrorResponse((response.json \ "reason").as[String])
+//  }
 
   def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
 
@@ -121,8 +121,13 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           case OK =>
             logAndAuditHttpResponse(transactionDESRegisterKnownUser, "Successful registration of known user", auditDetails, eventTypeSuccess)
             SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
-          case _ =>
-            handleRegistrationErrorResponse(r, transactionDESRegisterKnownUser, auditDetails)
+          case CONFLICT =>
+            logAndAuditHttpResponse(transactionDESRegisterKnownUser, "Duplicate BP found", conflictAuditMap(auditDetails, r), eventTypeConflict)
+            DuplicateDesResponse
+          case errorStatus =>
+            logAndAuditHttpResponse(transactionDESRegisterKnownUser, s"Registration failed - error code: $errorStatus body: ${r.body}",
+              failureAuditMap(auditDetails, r), eventTypeFailure)
+            DesErrorResponse((r.json \ "reason").as[String])
         }
     }
   }
@@ -145,7 +150,11 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
           case OK =>
             logAndAuditHttpResponse(transactionDESRegisterGhost, "Successful registration of ghost user", auditDetails, eventTypeSuccess)
             SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
-          case _ => handleRegistrationErrorResponse(r, transactionDESRegisterGhost, auditDetails)
+            //Originally this was abstracted as it was thought there were duplicate responses recieved. There are not.
+          case errorStatus =>
+            logAndAuditHttpResponse(transactionDESRegisterGhost, s"Registration failed - error code: $errorStatus body: ${r.body}",
+              failureAuditMap(auditDetails, r), eventTypeFailure)
+            DesErrorResponse((r.json \ "reason").as[String])
         }
     }
   }
@@ -167,7 +176,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
           case errorStatus =>
             logAndAuditHttpResponse(
-              transactionDESGetExistingSAP, s"Retrieve exisitng BP failed - error code: $errorStatus body: ${r.body}",
+              transactionDESGetExistingSAP, s"Retrieve existing BP failed - error code: $errorStatus body: ${r.body}",
               failureAuditMap(auditDetails, r), eventTypeFailure)
             DesErrorResponse((r.json \ "reason").as[String])
         }
