@@ -90,16 +90,6 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     Logger.warn(messageToLog)
     logger.audit(transactionIdentifier, auditDetails, eventType)
   }
-// FOR NOW
-//  def handleRegistrationErrorResponse(response: HttpResponse, transactionId: String, auditDetails: Map[String, String]): DesResponse = response.status match {
-//    case CONFLICT =>
-//      logAndAuditHttpResponse(transactionId, "Duplicate BP found", conflictAuditMap(auditDetails, response), eventTypeConflict)
-//      DuplicateDesResponse
-//    case errorStatus =>
-//      logAndAuditHttpResponse(transactionId, s"Registration failed - error code: $errorStatus body: ${response.body}",
-//        failureAuditMap(auditDetails, response), eventTypeFailure)
-//      DesErrorResponse((response.json \ "reason").as[String])
-//  }
 
   def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
 

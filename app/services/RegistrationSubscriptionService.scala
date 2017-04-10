@@ -58,7 +58,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
       registeredIndividualModel <- registerKnownIndividual()
       subscribedUserModel <- createSubscription(registeredIndividualModel)
       //This is not an ideal refactor but it still reads OK
-      _ <- enrolUserToTaxEnrolments(registeredIndividualModel, subscribedUserModel)
+      _ <- enrolUserForCGT(registeredIndividualModel.safeId, subscribedUserModel.cgtRef)
     } yield subscribedUserModel.cgtRef
   }
 
@@ -77,7 +77,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
       registeredIndividualModel <- registerGhostIndividual()
       subscribedUserModel <- createSubscription(registeredIndividualModel)
       //This is not an ideal refactor but it still reads OK
-      _ <- enrolUserToTaxEnrolments(registeredIndividualModel, subscribedUserModel)
+      _ <- enrolUserForCGT(registeredIndividualModel.safeId, subscribedUserModel.cgtRef)
     } yield subscribedUserModel.cgtRef
   }
 
@@ -92,42 +92,45 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
 
     Logger.info("Issuing a call to DES to register and subscribe organisation user")
 
+    def createCompanySubscription()(implicit hc: HeaderCarrier): Future[SubscriptionReferenceModel] = {
+      desConnector.subscribeCompanyForCgt(companySubmissionModel).map {
+        case SuccessfulSubscriptionResponse(data) => data
+        case DesErrorResponse(message) => throw new Exception(message)
+      }
+    }
+
     for {
-      subscribeResponse <- desConnector.subscribe(companySubmissionModel)
-      cgtRef1 <- fetchDESResponse(subscribeResponse)
-      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
-      cgtRef <- handleSubscriptionResponse(subscribeResponse, taxEnrolmentsBody, companySubmissionModel.sap.get)
-    } yield cgtRef
+      subscribedUserModel <- createCompanySubscription()
+      _ <- enrolUserForCGT(companySubmissionModel.sap, subscribedUserModel.cgtRef)
+    } yield subscribedUserModel.cgtRef
   }
 
   //Calling a method purely for side effects ;____;
-  private def enrolUserToTaxEnrolments(registeredUserModel: RegisteredUserModel,
-                                       subscriptionReferenceModel: SubscriptionReferenceModel)(implicit hc: HeaderCarrier): Future[Unit] = {
-
-    val cgtRef = subscriptionReferenceModel.cgtRef
+  private def enrolUserForCGT(sap: String,
+                                       cgtRef: String)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     //Avoided refactoring TaxEnrollments connector as I'm told we may not be using it for much longer.
     val taxEnrolmentsIssuerRequestBody = Json.obj(
       "serviceName" -> "CGT",
       "identifiers" -> Seq(Json.obj(
         "name" -> "cgtRef",
-        "value" -> subscriptionReferenceModel.cgtRef
+        "value" -> cgtRef
       ),
         Json.obj(
           "name" -> "cgtRef1",
-          "value" -> subscriptionReferenceModel.cgtRef
+          "value" -> cgtRef
         )
       ),
       "verifiers" -> Json.obj(
         "name" -> "cgtRef",
-        "value" -> subscriptionReferenceModel.cgtRef
+        "value" -> cgtRef
       )
     )
 
     val taxEnrolmentsSubscriberRequestBody = Json.obj(
       "serviceName" -> "CGT",
       "callbackUrl" -> TaxEnrolmentsKeys.callbackUrl,
-      "etmpId" -> registeredUserModel.safeId
+      "etmpId" -> sap
     )
 
     for {
@@ -139,39 +142,8 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     }
   }
 
-  //TODO: I suggest refactoring this response at the connecctor level to respond with the SuccessDesResponse with a meaningful model in it.
-  private def fetchDESRegisterResponse(response: DesResponse) = {
-    response match {
-      case SuccessfulRegistrationResponse(data) => Future.successful(extractSapFromDesSuccessful(data))
-      case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
-    }
-  }
-
-  //This is here to keep the subscribe method as-is for now...
-  private def fetchDESResponse(response: DesResponse) = {
-    response match {
-      case SuccessfulRegistrationResponse(data) => Future.successful(data.as[String])
-      case InvalidDesRequest(message) => Future.failed(new Exception(message.toString()))
-    }
-  }
-
-  private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
-    response match {
-      case SuccessTaxEnrolmentsResponse => Future.successful()
-      case InvalidTaxEnrolmentsRequest(message) => Future.failed(new Exception(message.toString()))
-    }
-  }
-
   def taxEnrolmentIssuerKnownUserBody(nino: String): Future[EnrolmentIssuerRequestModel] = {
     val identifier = Identifier(TaxEnrolmentsKeys.ninoIdentifier, nino)
     Future.successful(EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier))
   }
-
-  def taxEnrolmentIssuerGhostUserBody(cgtRef1: String): Future[EnrolmentIssuerRequestModel] = {
-    val identifier = Identifier(TaxEnrolmentsKeys.cgtRefIdentifier, cgtRef1)
-    Future.successful(EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier))
-  }
-
-  def taxEnrolmentSubscriberBody(sap: String): EnrolmentSubscriberRequestModel =
-    EnrolmentSubscriberRequestModel(TaxEnrolmentsKeys.serviceName, TaxEnrolmentsKeys.callbackUrl, sap)
 }
