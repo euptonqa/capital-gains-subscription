@@ -86,7 +86,10 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     auditDetails ++ Map("Failure reason" -> response.body, "Status" -> response.status.toString)
 
   //Feels dirty but this is a function called purely for it's side effects...
-  private def logAndAuditHttpResponse(transactionIdentifier: String, messageToLog: String, auditDetails: Map[String, String], eventType: String) = {
+  private def logAndAuditHttpResponse(transactionIdentifier: String,
+                                      messageToLog: String,
+                                      auditDetails: Map[String, String],
+                                      eventType: String)(implicit hc: HeaderCarrier) = {
     Logger.warn(messageToLog)
     logger.audit(transactionIdentifier, auditDetails, eventType)
   }

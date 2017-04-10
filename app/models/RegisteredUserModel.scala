@@ -16,4 +16,10 @@
 
 package models
 
+import play.api.libs.json.{Json, OFormat}
+
 case class RegisteredUserModel(safeId: String)
+
+object RegisteredUserModel {
+  implicit val formats: OFormat[RegisteredUserModel] = Json.format[RegisteredUserModel]
+}

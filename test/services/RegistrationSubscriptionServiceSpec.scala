@@ -106,7 +106,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
         SuccessTaxEnrolmentsResponse
       )
 
-      lazy val result = await(testService.createSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
+      lazy val result = await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
 
       "return CGT ref" in {
         result shouldBe "fake cgt ref"
@@ -134,7 +134,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.createSubscription(InvalidDesRequest(Json.obj("reason" -> "y")), taxEnrolmentsBody))
+        await(testService.createIndividualSubscription(InvalidDesRequest(Json.obj("reason" -> "y")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
@@ -150,7 +150,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.createSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
+        await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
@@ -166,7 +166,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.createSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
+        await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
@@ -182,7 +182,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       )
 
       lazy val ex = intercept[Exception] {
-        await(testService.createSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
+        await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
       }
 
       "throw an exception with json body message" in {
