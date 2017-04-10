@@ -36,8 +36,10 @@ import scala.concurrent.{ExecutionContext, Future}
 sealed trait DesResponse
 
 case class SuccessfulRegistrationResponse(response: RegisterUserModel) extends DesResponse
+case class SuccessfulSubscriptionResponse(response: SubscriptionReferenceModel) extends DesResponse
 
-case class DesErrorResponse(message: JsValue) extends DesResponse
+//Not sure if this would be better responding with an error model that holds the status code and the message?
+case class DesErrorResponse(message: String) extends DesResponse
 
 case object DuplicateDesResponse extends DesResponse
 
@@ -55,11 +57,13 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   implicit val httpRds = new HttpReads[HttpResponse] {
     def read(http: String, url: String, res: HttpResponse): HttpResponse = customDESRead(http, url, res)
   }
+
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
-    //This function is called from the HTTPErroFunctions of the hmrcHttp Lib
+    //This function is called from the HTTPErrorFunctions of the hmrcHttp Lib
     handleResponse(http, url)(response)
   }
 
+  //TODO refactor these custom posts HTTP's
   @inline
   private def cPOST[I, O](url: String, body: I, headers: Seq[(String, String)] = Seq.empty)(implicit wts: Writes[I], rds: HttpReads[O], hc: HeaderCarrier) = {
     http.POST[I, O](url, body, headers)(wts = wts, rds = rds, hc = attachDesAuthorisationToHeaderCarrier(hc))
@@ -93,7 +97,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     case errorStatus =>
       logAndAuditHttpResponse(transactionId, s"Registration failed - error code: $errorStatus body: ${response.body}",
         failureAuditMap(auditDetails, response), eventTypeFailure)
-      DesErrorResponse(response.json)
+      DesErrorResponse((response.json \ "reason").as[String])
   }
 
   def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
@@ -141,6 +145,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logAndAuditHttpResponse(transactionDESRegisterGhost, "Successful registration of ghost user", auditDetails, eventTypeSuccess)
             SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisterUserModel])
           case _ => handleRegistrationErrorResponse(r, transactionDESRegisterGhost, auditDetails)
+        }
     }
   }
 
@@ -160,71 +165,52 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
             logAndAuditHttpResponse(
               transactionDESGetExistingSAP, s"Retrieve exisitng BP failed - error code: $errorStatus body: ${r.body}",
               failureAuditMap(auditDetails, r), eventTypeFailure)
-            DesErrorResponse(r.json)
+            DesErrorResponse((r.json \ "reason").as[String])
         }
     }
   }
 
-  //TODO AWAITING SUBSCRIPTION API SPECS FOR GOD'S SAKE
-  def subscribe(submissionModel: Any)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+  //TODO may need updating as the API had concerns raised on it last week (beginning 03/04/2017)
+  def subscribeIndividualForCgt(subscribeIndividualModel: SubscribeIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
-    submissionModel match {
-      case individual: SubscribeIndividualModel =>
-        Logger.info("Made a post request to the stub with an individual subscribers sap of " + individual.sap)
+    Logger.info("Made a post request to the stub with an individual subscribers sap of " + subscribeIndividualModel.sap)
 
-        val requestUrl: String = s"$serviceUrl$serviceContext/individual/${individual.sap}/subscribe"
-        val response = cPOST(requestUrl, Json.toJson(individual))
-        val auditDetails: Map[String, String] = Map("Safe Id" -> individual.sap, "Url" -> requestUrl)
-        handleSubscriptionForCGTResponse(response, auditDetails, individual.sap)
+    val requestUrl: String = s"$serviceUrl$serviceContext/individual/${subscribeIndividualModel.sap}/subscribe"
+    val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
+    val auditDetails: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
 
-      case company: CompanySubmissionModel =>
-        Logger.info("Made a post request to the stub with a company subscribers sap of " + company.sap.get)
-
-        val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
-        val response = cPOST(requestUrl, Json.toJson(company))
-        val auditDetails: Map[String, String] = Map("Safe Id" -> company.sap.get, "Url" -> requestUrl)
-        handleSubscriptionForCGTResponse(response, auditDetails, company.sap.get)
-    }
-  }
-
-  def handleSubscriptionForCGTResponse(response: Future[HttpResponse], auditDetails: Map[String, String], reference: String)
-                                      (implicit hc: HeaderCarrier): Future[DesResponse] = {
     response map { r =>
       r.status match {
         case OK =>
-          Logger.info(s"Successful DES submission for $reference")
-          logger.audit(transactionDESSubscribe, auditDetails, eventTypeSuccess)
-          SuccessDesResponse(r.json)
-        case CONFLICT =>
-          Logger.warn("Error Conflict: SAP Number already in existence")
-          logger.audit(transactionDESSubscribe, conflictAuditMap(auditDetails, r), eventTypeConflict)
-          DuplicateDesResponse
-        case ACCEPTED =>
-          Logger.info(s"Accepted DES submission for $reference")
-          logger.audit(transactionDESSubscribe, auditDetails, eventTypeSuccess)
-          SuccessDesResponse(r.json)
-        case BAD_REQUEST =>
-          Logger.warn(s"Error with the request ${r.body}")
-          logger.audit(transactionDESSubscribe, failureAuditMap(auditDetails, r), eventTypeFailure)
-          InvalidDesRequest(r.json)
+          logAndAuditHttpResponse(transactionDESSubscribe, "Successful DES submission for $reference", auditDetails, eventTypeSuccess)
+          //Not sure whether to have this a Try block or not.
+          SuccessfulSubscriptionResponse((r.json \ "subscriptionCGT" \ "referenceNumber").as[SubscriptionReferenceModel])
+        case errorStatus =>
+          logAndAuditHttpResponse(transactionDESSubscribe, s"Subscription failed - error code: $errorStatus body: ${r.body}",
+            failureAuditMap(auditDetails, r), eventTypeFailure)
+          DesErrorResponse((r.json \ "reason").as[String])
       }
-    } recover {
-      case _: NotFoundException =>
-        Logger.warn(s"Not found for $reference")
-        logger.audit(transactionDESSubscribe, auditDetails, eventTypeNotFound)
-        NotFoundDesResponse
-      case _: InternalServerException =>
-        Logger.warn(s"Internal server error for $reference")
-        logger.audit(transactionDESSubscribe, auditDetails, eventTypeInternalServerError)
-        DesErrorResponse
-      case _: BadGatewayException =>
-        Logger.warn(s"Bad gateway status for $reference")
-        logger.audit(transactionDESSubscribe, auditDetails, eventTypeBadGateway)
-        DesErrorResponse
-      case ex: Exception =>
-        Logger.warn(s"Exception of ${ex.printStackTrace()} for $reference")
-        logger.audit(transactionDESSubscribe, auditDetails, eventTypeGeneric)
-        DesErrorResponse
+    }
+  }
+
+  def subscribeCompanyForCgt(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
+
+    Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap.get)
+
+    val requestUrl: String = s"$serviceUrl$serviceContext/non-resident/organisation/subscribe"
+    val response = cPOST(requestUrl, Json.toJson(companySubmissionModel))
+    val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
+
+    response map { r =>
+      r.status match {
+        case OK =>
+          logAndAuditHttpResponse(transactionDESSubscribe, "Successful DES submission for $reference", auditDetails, eventTypeSuccess)
+          SuccessfulSubscriptionResponse((r.json \ "subscriptionCGT" \ "referenceNumber").as[SubscriptionReferenceModel])
+        case errorStatus =>
+          logAndAuditHttpResponse(transactionDESSubscribe, s"Subscription failed - error code: $errorStatus body: ${r.body}",
+            failureAuditMap(auditDetails, r), eventTypeFailure)
+          DesErrorResponse((r.json \ "reason").as[String])
+      }
     }
   }
 }

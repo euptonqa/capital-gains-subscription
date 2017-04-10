@@ -108,13 +108,6 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     }
   }
 
-  //
-  //  //TODO: this should DEFINETLEY be at connector level but to avoid the large re-work that would require I'm putting it here for now
-  //  private def extractSapFromDesSuccessful(body: JsValue) = {
-  //    //TODO when this is moved to the connector it should also be replaced by a model, not just a string
-  //    (body \ "safeId").as[String]
-  //  }
-
   private def fetchTaxEnrolmentsResponse(response: TaxEnrolmentsResponse) = {
     response match {
       case SuccessTaxEnrolmentsResponse => Future.successful()
