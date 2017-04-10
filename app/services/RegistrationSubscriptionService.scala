@@ -57,19 +57,19 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     for {
       registeredIndividualModel <- registerKnownIndividual()
       subscribedUserModel <- createSubscription(registeredIndividualModel)
-      //Enrolments goes here
+    //Enrolments goes here
     } yield cgtRef
   }
 
-//  def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
-//    Logger.info("Issuing a call to DES to register and subscribe ghost user")
-//    for {
-//      sapResponse <- desConnector.registerIndividualGhost(userFactsModel)
-//      cgtRef1 <- fetchDESResponse(sapResponse)
-//      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
-//      cgtRef <- createSubscription(sapResponse, taxEnrolmentsBody)
-//    } yield cgtRef
-//  }
+  //  def subscribeGhostUser(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[String] = {
+  //    Logger.info("Issuing a call to DES to register and subscribe ghost user")
+  //    for {
+  //      sapResponse <- desConnector.registerIndividualGhost(userFactsModel)
+  //      cgtRef1 <- fetchDESResponse(sapResponse)
+  //      taxEnrolmentsBody <- taxEnrolmentIssuerGhostUserBody(cgtRef1)
+  //      cgtRef <- createSubscription(sapResponse, taxEnrolmentsBody)
+  //    } yield cgtRef
+  //  }
 
   def createSubscription(registeredUser: RegisteredUserModel)(implicit hc: HeaderCarrier): Future[SubscriptionReferenceModel] = {
     desConnector.subscribeIndividualForCgt(SubscribeIndividualModel(registeredUser.safeId)).map {
@@ -90,10 +90,28 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     } yield cgtRef
   }
 
-  private def enrolUserToGG(subscribedIndividual: String)(implicit hc: HeaderCarrier): Future[String] = {
+  private def enrolUserToTaxEnrolments(subscriptionReferenceModel: SubscriptionReferenceModel)(implicit hc: HeaderCarrier): Future[String] = {
+
+    //TODO: When when the Tax Enrolments Connector is refactored this should be moved there
+    val taxEnrolmentsIssuerRequestBody = Json.obj(
+      "serviceName" -> "CGT",
+      "identifiers" -> Seq(Json.obj(
+        "name" -> "cgtRef",
+        "value" -> subscriptionReferenceModel.cgtRef
+      ),
+        Json.obj(
+          "name" -> "cgtRef1",
+          "value" -> subscriptionReferenceModel.cgtRef
+        )
+      ),
+      "verifiers" -> Json.obj(
+        "name" -> "cgtRef",
+        "value" -> subscriptionReferenceModel.cgtRef
+      )
+    )
+
     for {
-      cgtRef <- fetchDESResponse(desResponse)
-      enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(cgtRef, Json.toJson(taxEnrolmentsBody))
+      enrolmentIssuerRequest <- taxEnrolmentsConnector.getIssuerResponse(subscriptionReferenceModel.cgtRef, taxEnrolmentsIssuerRequestBody)
       issuerResponse <- fetchTaxEnrolmentsResponse(enrolmentIssuerRequest)
       enrolmentSubscriberRequest <- taxEnrolmentsConnector.getSubscriberResponse(cgtRef, Json.toJson(taxEnrolmentSubscriberBody(sap)))
       subscriberResponse <- fetchTaxEnrolmentsResponse(enrolmentSubscriberRequest)
