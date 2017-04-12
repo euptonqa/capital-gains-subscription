@@ -176,13 +176,14 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  //TODO may need updating as the API had concerns raised on it last week (beginning 03/04/2017)
   def subscribeIndividualForCgt(subscribeIndividualModel: SubscribeIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     Logger.info("Made a post request to the stub with an individual subscribers sap of " + subscribeIndividualModel.sap)
 
     //TODO: Abstract this to app-config
     val requestUrl: String = s"$serviceUrl$serviceContext/create/${subscribeIndividualModel.sap}/subscription"
+
+    //TODO update the body of this subscription request
 
     val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
     val auditDetails: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
@@ -201,6 +202,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
+  //TODO: Update this with James' PR
   def subscribeCompanyForCgt(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap)
@@ -209,7 +211,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
 
     val response = cPOST(requestUrl, Json.toJson(companySubmissionModel))
-    val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap, "Url" -> requestUrl)
+    val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
 
     response map { r =>
       r.status match {

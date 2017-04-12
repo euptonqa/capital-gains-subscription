@@ -32,8 +32,6 @@ import scala.concurrent.Future
 @Singleton
 class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector) {
 
-
-
   //TODO: Tomorrows job is to update this side for the registration component and then finish the subscription.
   def subscribeKnownUser(nino: String)(implicit hc: HeaderCarrier): Future[String] = {
 
@@ -103,7 +101,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
 
     for {
       subscribedUserModel <- createCompanySubscription()
-      _ <- enrolUserForCGT(companySubmissionModel.sap, subscribedUserModel.cgtRef)
+      _ <- enrolUserForCGT(companySubmissionModel.sap.get, subscribedUserModel.cgtRef)
     } yield subscribedUserModel.cgtRef
   }
 
@@ -113,7 +111,11 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     //Avoided refactoring TaxEnrollments connector as I'm told we may not be using it for much longer.
     val taxEnrolmentsIssuerRequestBody = Json.obj(
       "serviceName" -> "CGT",
-      "identifiers" -> Seq(Json.obj(
+      "identifiers" -> Json.obj(
+        "name" -> "cgtRef",
+        "value" -> cgtRef
+      ),
+      "verifiers" -> Seq(Json.obj(
         "name" -> "cgtRef",
         "value" -> cgtRef
       ),
@@ -121,10 +123,6 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
           "name" -> "cgtRef1",
           "value" -> cgtRef
         )
-      ),
-      "verifiers" -> Json.obj(
-        "name" -> "cgtRef",
-        "value" -> cgtRef
       )
     )
 

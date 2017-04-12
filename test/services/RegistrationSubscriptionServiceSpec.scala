@@ -17,12 +17,11 @@
 package services
 
 import connectors._
-import models._
+import models.{SubscriptionReferenceModel, _}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar
-import play.api.libs.json.Json
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
@@ -32,25 +31,35 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
   implicit val hc: HeaderCarrier = mock[HeaderCarrier]
   implicit val ec: ExecutionContext = mock[ExecutionContext]
-  lazy val mockDESConnector: DesConnector = mock[DesConnector]
-  lazy val mockTaxEnrolmentsConnector: TaxEnrolmentsConnector = mock[TaxEnrolmentsConnector]
 
-  def setupMock(cgtRef: DesResponse, issuerResponse: TaxEnrolmentsResponse, subscriberResponse: TaxEnrolmentsResponse,
-                sap: Option[DesResponse] = Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765"))),
-                getExistingSapResponse: Option[DesResponse] = Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))):
-  RegistrationSubscriptionService = {
+  private val defaultRegistrationResponse = SuccessfulRegistrationResponse(RegisteredUserModel("SAP123456789098"))
+  private val defaultSubscriptionResponse = SuccessfulSubscriptionResponse(SubscriptionReferenceModel("fake cgt ref"))
 
-    when(mockDESConnector.obtainSAP(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-      .thenReturn(Future.successful(sap.get))
+  def setupMock(issuerResponse: TaxEnrolmentsResponse = SuccessTaxEnrolmentsResponse,
+                subscriberResponse: TaxEnrolmentsResponse = SuccessTaxEnrolmentsResponse,
+                //TODO: refactor these to not be options, there is no point.
+                registrationResponse: Option[DesResponse] = Some(defaultRegistrationResponse),
+                getExistingSapResponse: Option[DesResponse] = Some(defaultRegistrationResponse),
+                subscriptionResponse: Option[DesResponse] = Some(defaultSubscriptionResponse)
+               ): RegistrationSubscriptionService = {
 
-    when(mockDESConnector.obtainSAPGhost(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
-      .thenReturn(Future.successful(sap.get))
+    val mockDESConnector: DesConnector = mock[DesConnector]
+    val mockTaxEnrolmentsConnector: TaxEnrolmentsConnector = mock[TaxEnrolmentsConnector]
 
-    when(mockDESConnector.subscribe(ArgumentMatchers.any())(ArgumentMatchers.any()))
-      .thenReturn(Future.successful(cgtRef))
+    when(mockDESConnector.registerIndividualWithNino(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      .thenReturn(Future.successful(registrationResponse.get))
 
-    when(mockDESConnector.getExistingSap(ArgumentMatchers.any())(ArgumentMatchers.any()))
+    when(mockDESConnector.registerIndividualGhost(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+      .thenReturn(Future.successful(registrationResponse.get))
+
+    when(mockDESConnector.getSAPForExistingBP(ArgumentMatchers.any())(ArgumentMatchers.any()))
       .thenReturn(Future.successful(getExistingSapResponse.get))
+
+    when(mockDESConnector.subscribeIndividualForCgt(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      .thenReturn(Future.successful(subscriptionResponse.get))
+
+    when(mockDESConnector.subscribeCompanyForCgt(ArgumentMatchers.any())(ArgumentMatchers.any()))
+      .thenReturn(Future.successful(subscriptionResponse.get))
 
     when(mockTaxEnrolmentsConnector.getIssuerResponse(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any()))
       .thenReturn(Future.successful(issuerResponse))
@@ -65,128 +74,28 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
   lazy val taxEnrolmentsBody = EnrolmentIssuerRequestModel("", Identifier("", ""))
   lazy val companySubmissionModel = CompanySubmissionModel(Some("123456789098765"), None, Some(CompanyAddressModel(None, None, None, None, Some(""), None)))
 
-  "Calling RegistrationSubscriptionService .taxEnrolmentIssuerKnownUserBody" should {
+  "Calling RegistrationSubscriptionService .createIndividualSubscription" when {
 
-    lazy val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
-    lazy val result = service.taxEnrolmentIssuerKnownUserBody("AA123456B")
+    "subscription succeeds" should {
 
-    "return a formatted EnrolmentIssuerRequestModel" in {
-      await(result) shouldEqual EnrolmentIssuerRequestModel("HMRC-CGT",
-        Identifier("NINO", "AA123456B"))
-    }
-  }
+      lazy val testService = setupMock()
 
-  "Calling RegistrationSubscriptionService .taxEnrolmentIssuerGhostUserBody" should {
-
-    lazy val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
-    lazy val result = service.taxEnrolmentIssuerGhostUserBody("CGTREF")
-
-    "return a formatted EnrolmentIssuerRequestModel" in {
-      await(result) shouldEqual EnrolmentIssuerRequestModel("HMRC-CGT",
-        Identifier("CGTREF1", "CGTREF"))
-    }
-  }
-
-  "Calling RegistrationSubscriptionService .taxEnrolmentSubscriberBody" should {
-
-    lazy val service = new RegistrationSubscriptionService(mockDESConnector, mockTaxEnrolmentsConnector)
-    lazy val result = service.taxEnrolmentSubscriberBody("123456789098765")
-
-    "return a formatted EnrolmentSubscriberRequestModel" in {
-      await(result) shouldEqual EnrolmentSubscriberRequestModel("HMRC-CGT", "", "123456789098765")
-    }
-  }
-
-  "Calling RegistrationSubscriptionService .subscribe" should {
-
-    "with a valid DesResponse for SAP" should {
-
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse
-      )
-
-      lazy val result = await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
+      lazy val result = await(testService.createIndividualSubscription(RegisteredUserModel("SAP123456789098")))
 
       "return CGT ref" in {
-        result shouldBe "fake cgt ref"
+        result shouldBe SubscriptionReferenceModel("fake cgt ref")
       }
     }
 
-    "with an sap instead of a DesResponse" should {
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse
-      )
+    "subscription fails" should {
+      lazy val testService = setupMock(subscriptionResponse = Some(DesErrorResponse("Subscription failed")))
 
-      lazy val result = await(testService.subscribeOrganisationUser(companySubmissionModel))
-
-      "return CGT ref" in {
-        result shouldBe "fake cgt ref"
-      }
-    }
-
-    "with a failed DesResponse for registration" should {
-
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse
-      )
-
-      lazy val ex = intercept[Exception] {
-        await(testService.createIndividualSubscription(InvalidDesRequest(Json.obj("reason" -> "y")), taxEnrolmentsBody))
+      lazy val result = intercept[Exception] {
+        await(testService.createIndividualSubscription(RegisteredUserModel("SAP123456789098")))
       }
 
-      "throw an exception with json body message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
-      }
-    }
-
-    "with a failed DesResponse for subscription" should {
-
-      lazy val testService = setupMock(InvalidDesRequest(Json.obj("reason" -> "y")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse
-      )
-
-      lazy val ex = intercept[Exception] {
-        await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
-      }
-
-      "throw an exception with json body message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
-      }
-    }
-
-    "with a failed Tax Enrolments issuer response" should {
-
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y")),
-        SuccessTaxEnrolmentsResponse
-      )
-
-      lazy val ex = intercept[Exception] {
-        await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
-      }
-
-      "throw an exception with json body message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
-      }
-    }
-
-    "with a failed Tax Enrolments subscriber response" should {
-
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        InvalidTaxEnrolmentsRequest(Json.obj("reason" -> "y"))
-      )
-
-      lazy val ex = intercept[Exception] {
-        await(testService.createIndividualSubscription(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")), taxEnrolmentsBody))
-      }
-
-      "throw an exception with json body message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
+      "throw an error with the message" in {
+        result.getMessage shouldBe "Subscription failed"
       }
     }
   }
@@ -195,11 +104,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
     "a valid request is made with a new user" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))
-      )
+      lazy val testService = setupMock()
 
       lazy val result = await(testService.subscribeKnownUser("AB123456B"))
 
@@ -208,29 +113,25 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       }
     }
 
-    "an invalid request is made with a new user" should {
+    "an registering a new user fails" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
-      )
+      lazy val testService = setupMock(
+        registrationResponse = Some(DesErrorResponse("reason")))
 
       lazy val ex = intercept[Exception] {
         await(testService.subscribeKnownUser("AB123456B"))
       }
 
       "throw an exception with error message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
+        ex.getMessage shouldBe "reason"
       }
     }
 
     "a valid request is made with an existing user" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(DuplicateDesResponse)
+      lazy val testService = setupMock(
+        registrationResponse = Some(DuplicateDesResponse),
+        getExistingSapResponse = Some(defaultRegistrationResponse)
       )
 
       lazy val result = await(testService.subscribeKnownUser("AB123456B"))
@@ -242,11 +143,9 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
     "an invalid request is made with an existing user" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(DuplicateDesResponse),
-        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
+      lazy val testService = setupMock(
+        registrationResponse = Some(DuplicateDesResponse),
+        getExistingSapResponse = Some(DesErrorResponse("No known SAP"))
       )
 
       lazy val ex = intercept[Exception] {
@@ -254,21 +153,40 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
       }
 
       "throw an exception with error message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
+        ex.getMessage shouldBe "No known SAP"
       }
     }
 
+    "subscription succeeds but tax enrolments issuer fails" should {
+      lazy val testService = setupMock(issuerResponse = TaxEnrolmentsErrorResponse)
+
+      lazy val result = intercept[Exception] {
+        await(testService.subscribeKnownUser("AB123456B"))
+      }
+
+      "throw an error with the message" in {
+        result.getMessage shouldBe "Enrolling user for CGT failed"
+      }
+    }
+
+    "subscription succeeds but tax enrolments subscriber fails" should {
+      lazy val testService = setupMock(subscriberResponse = TaxEnrolmentsErrorResponse)
+
+      lazy val result = intercept[Exception] {
+        await(testService.subscribeKnownUser("AB123456B"))
+      }
+
+      "throw an error with the message" in {
+        result.getMessage shouldBe "Enrolling user for CGT failed"
+      }
+    }
   }
 
   "Calling RegistrationSubscriptionService .subscribeGhostUser" should {
 
     "with a valid request" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))
-      )
+      lazy val testService = setupMock()
 
       lazy val result = await(testService.subscribeGhostUser(userFactsModel))
 
@@ -279,18 +197,14 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
     "with an invalid request" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
-      )
+      lazy val testService = setupMock(subscriptionResponse = Some(DesErrorResponse("Subscription failed")))
 
       lazy val ex = intercept[Exception] {
         await(testService.subscribeGhostUser(userFactsModel))
       }
 
       "throw an exception with json body message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
+        ex.getMessage shouldBe "Subscription failed"
       }
     }
   }
@@ -299,11 +213,7 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
     "with a valid request" should {
 
-      lazy val testService = setupMock(SuccessDesResponse(Json.toJson("fake cgt ref")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(SuccessDesResponse(Json.obj("safeId" -> "123456789098765")))
-      )
+      lazy val testService = setupMock()
 
       lazy val result = await(testService.subscribeOrganisationUser(companySubmissionModel))
 
@@ -314,18 +224,14 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
 
     "with an invalid request" should {
 
-      lazy val testService = setupMock(InvalidDesRequest(Json.obj("reason" -> "y")),
-        SuccessTaxEnrolmentsResponse,
-        SuccessTaxEnrolmentsResponse,
-        Some(InvalidDesRequest(Json.obj("reason" -> "y")))
-      )
+      lazy val testService = setupMock(subscriptionResponse = Some(DesErrorResponse("Subscription failed")))
 
       lazy val ex = intercept[Exception] {
         await(testService.subscribeOrganisationUser(companySubmissionModel))
       }
 
       "throw an exception with json body message" in {
-        ex.getMessage shouldBe Json.obj("reason" -> "y").toString()
+        ex.getMessage shouldBe "Subscription failed"
       }
     }
   }

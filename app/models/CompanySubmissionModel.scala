@@ -19,7 +19,7 @@ package models
 import play.api.libs.json.{Json, OFormat}
 
 case class CompanySubmissionModel(
-                                   sap: String,
+                                   sap: Option[String],
                                    contactAddress: Option[CompanyAddressModel],
                                    registeredAddress: Option[CompanyAddressModel]
                                  ) {
@@ -29,9 +29,9 @@ case class CompanySubmissionModel(
 object CompanySubmissionModel {
   implicit val formats: OFormat[CompanySubmissionModel] = Json.format[CompanySubmissionModel]
 
-  def validateSAP(sap: String): Boolean = {
+  def validateSAP(sap: Option[String]): Boolean = {
     sap match {
-      case data => data.length.equals(15)
+      case Some(data) => data.length.equals(15)
       case _ => true
     }
   }
