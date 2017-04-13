@@ -54,7 +54,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   val http: HttpGet with HttpPost with HttpPut = WSHttp
 
-  //TODO: This implicit reads and the customDESRead are largely redundant and I will refactor them later.
+  //TODO: This implicit reads and the customDESRead are largely redundant and can be refactored out.
   implicit val httpRds = new HttpReads[HttpResponse] {
     def read(http: String, url: String, res: HttpResponse): HttpResponse = customDESRead(http, url, res)
   }
@@ -106,14 +106,14 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val response = cPOST(requestUrl, registerRequestBody)
     val auditDetails: Map[String, String] = Map("RequestBody" -> registerRequestBody.toString(), "Url" -> requestUrl)
 
-    Logger.info("Made a post request to the stub with a url of " + requestUrl)
+    Logger.info("Made a post request to the register individual with nino with a url of " + requestUrl)
 
     response map {
       r =>
         r.status match {
           case OK =>
             logAndAuditHttpResponse(transactionDESRegisterKnownUser, "Successful registration of known user", auditDetails, eventTypeSuccess)
-            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
+            SuccessfulRegistrationResponse(RegisteredUserModel((r.json \ "safeId").as[String]))
           case CONFLICT =>
             logAndAuditHttpResponse(transactionDESRegisterKnownUser, "Duplicate BP found", conflictAuditMap(auditDetails, r), eventTypeConflict)
             DuplicateDesResponse
@@ -142,7 +142,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         r.status match {
           case OK =>
             logAndAuditHttpResponse(transactionDESRegisterGhost, "Successful registration of ghost user", auditDetails, eventTypeSuccess)
-            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
+            SuccessfulRegistrationResponse(RegisteredUserModel((r.json \ "safeId").as[String]))
             //Originally this was abstracted as it was thought there were duplicate responses recieved. There are not.
           case errorStatus =>
             logAndAuditHttpResponse(transactionDESRegisterGhost, s"Registration failed - error code: $errorStatus body: ${r.body}",
@@ -166,7 +166,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       r =>
         r.status match {
           case OK => logAndAuditHttpResponse(transactionDESGetExistingSAP, "Successful request for existing SAP", auditDetails, eventTypeSuccess)
-            SuccessfulRegistrationResponse((r.json \ "safeId").as[RegisteredUserModel])
+            SuccessfulRegistrationResponse(RegisteredUserModel((r.json \ "safeId").as[String]))
           case errorStatus =>
             logAndAuditHttpResponse(
               transactionDESGetExistingSAP, s"Retrieve existing BP failed - error code: $errorStatus body: ${r.body}",
@@ -193,7 +193,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
         case OK =>
           logAndAuditHttpResponse(transactionDESSubscribe, "Successful DES submission for $reference", auditDetails, eventTypeSuccess)
           //Not sure whether to have this a Try block or not.
-          SuccessfulSubscriptionResponse((r.json \ "subscriptionCGT" \ "referenceNumber").as[SubscriptionReferenceModel])
+          SuccessfulSubscriptionResponse(SubscriptionReferenceModel((r.json \ "subscriptionCGT" \ "referenceNumber").as[String]))
         case errorStatus =>
           logAndAuditHttpResponse(transactionDESSubscribe, s"Subscription failed - error code: $errorStatus body: ${r.body}",
             failureAuditMap(auditDetails, r), eventTypeFailure)
@@ -217,7 +217,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       r.status match {
         case OK =>
           logAndAuditHttpResponse(transactionDESSubscribe, "Successful DES submission for $reference", auditDetails, eventTypeSuccess)
-          SuccessfulSubscriptionResponse((r.json \ "subscriptionCGT" \ "referenceNumber").as[SubscriptionReferenceModel])
+          SuccessfulSubscriptionResponse(SubscriptionReferenceModel((r.json \ "subscriptionCGT" \ "referenceNumber").as[String]))
         case errorStatus =>
           logAndAuditHttpResponse(transactionDESSubscribe, s"Subscription failed - error code: $errorStatus body: ${r.body}",
             failureAuditMap(auditDetails, r), eventTypeFailure)
