@@ -19,7 +19,7 @@ package connectors
 import javax.inject.{Inject, Singleton}
 
 import audit.Logging
-import common.AuditConstants.{transactionDESRegisterKnownUser, _}
+import common.AuditConstants._
 import common.Keys
 import config.{ApplicationConfig, WSHttp}
 import models._
@@ -31,7 +31,7 @@ import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 sealed trait DesResponse
 
@@ -94,7 +94,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     logger.audit(transactionIdentifier, auditDetails, eventType)
   }
 
-  def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+  def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     //TODO: abstract part of this to app-config
     val requestUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
@@ -126,7 +126,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  def registerIndividualGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesResponse] = {
+  def registerIndividualGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     //TODO: Abstract this to app-config
     val registerGhostUrl = "/non-resident/individual/register"

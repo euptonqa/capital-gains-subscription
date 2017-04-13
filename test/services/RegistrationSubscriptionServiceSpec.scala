@@ -46,10 +46,10 @@ class RegistrationSubscriptionServiceSpec extends UnitSpec with MockitoSugar wit
     val mockDESConnector: DesConnector = mock[DesConnector]
     val mockTaxEnrolmentsConnector: TaxEnrolmentsConnector = mock[TaxEnrolmentsConnector]
 
-    when(mockDESConnector.registerIndividualWithNino(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(mockDESConnector.registerIndividualWithNino(ArgumentMatchers.any())(ArgumentMatchers.any()))
       .thenReturn(Future.successful(registrationResponse.get))
 
-    when(mockDESConnector.registerIndividualGhost(ArgumentMatchers.any())(ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(mockDESConnector.registerIndividualGhost(ArgumentMatchers.any())(ArgumentMatchers.any()))
       .thenReturn(Future.successful(registrationResponse.get))
 
     when(mockDESConnector.getSAPForExistingBP(ArgumentMatchers.any())(ArgumentMatchers.any()))
