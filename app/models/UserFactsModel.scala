@@ -16,6 +16,8 @@
 
 package models
 
+import org.apache.commons.lang3.RandomStringUtils
+import play.api.Logger
 import play.api.libs.json._
 
 case class UserFactsModel(firstName: String,
@@ -29,4 +31,39 @@ case class UserFactsModel(firstName: String,
 
 object UserFactsModel {
   implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
+
+  def getUniqueAckNo: String = {
+    val length = 32
+    val nanoTime = System.nanoTime()
+    val restChars = length - nanoTime.toString.length
+    val randomChars = RandomStringUtils.randomAlphanumeric(restChars)
+    randomChars + nanoTime
+  }
+
+  implicit val asJson: UserFactsModel => JsValue = model => {
+    Json.obj(
+      "acknowledgementReference" -> getUniqueAckNo,
+      "isAnAgent" -> false,
+      "isAGroup" -> false,
+      "individual" -> Json.obj(
+        "firstName" -> model.firstName,
+        "lastName" -> model.lastName
+      ),
+      "address" -> Json.obj(
+        "addressLine1" -> model.addressLineOne,
+        "addressLine2" -> model.addressLineTwo,
+        "addressLine3" -> model.townOrCity,
+        "addressLine4" -> model.county,
+        "postCode" -> {
+          if (model.country == "GB") Some(model.postCode.getOrElse{
+            Logger.warn("Attempted to submit UK address without a postcode.")
+            throw new Exception("Attempted to submit UK address without a postcode.")
+          })
+          else model.postCode
+        },
+        "country" -> model.country
+      ),
+      "contactDetails" -> Json.obj()
+    )
+  }
 }

@@ -25,7 +25,7 @@ import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -132,8 +132,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val registerGhostUrl = "/non-resident/individual/register"
 
     val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostUrl"
-    val jsonFullDetails = Json.toJson(userFactsModel)
-    val response = cPOST(requestUrl, jsonFullDetails)
+    val response = cPOST[JsValue, HttpResponse](requestUrl, userFactsModel)
     val auditDetails: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
 
     Logger.info("Made a post request to the stub with a url of " + requestUrl)
