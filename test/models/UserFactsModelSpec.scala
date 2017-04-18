@@ -65,11 +65,11 @@ class UserFactsModelSpec extends UnitSpec {
         }
 
         "does not contain postcode" in {
-          (json \ "address" \ "postCode").asOpt[String] shouldBe None
+          (json \ "address" \ "postalCode").asOpt[String] shouldBe None
         }
 
-        "contains country" in {
-          (json \ "address" \ "country").as[String] shouldBe "DE"
+        "contains countryCode" in {
+          (json \ "address" \ "countryCode").as[String] shouldBe "DE"
         }
       }
     }
@@ -89,11 +89,11 @@ class UserFactsModelSpec extends UnitSpec {
         }
 
         "contains postcode" in {
-          (json \ "address" \ "postCode").asOpt[String] shouldBe Some("XX11 1XX")
+          (json \ "address" \ "postalCode").asOpt[String] shouldBe Some("XX11 1XX")
         }
 
-        "contains a country of GB" in {
-          (json \ "address" \ "country").as[String] shouldBe "GB"
+        "contains a countryCode of GB" in {
+          (json \ "address" \ "countryCode").as[String] shouldBe "GB"
         }
       }
     }

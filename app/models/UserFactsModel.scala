@@ -54,14 +54,14 @@ object UserFactsModel {
         "addressLine2" -> model.addressLineTwo,
         "addressLine3" -> model.townOrCity,
         "addressLine4" -> model.county,
-        "postCode" -> {
+        "postalCode" -> {
           if (model.country == "GB") Some(model.postCode.getOrElse{
             Logger.warn("Attempted to submit UK address without a postcode.")
             throw new Exception("Attempted to submit UK address without a postcode.")
           })
           else model.postCode
         },
-        "country" -> model.country
+        "countryCode" -> model.country
       ),
       "contactDetails" -> Json.obj()
     )
