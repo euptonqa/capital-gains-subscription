@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-package common
+package models
 
-object Keys {
+import play.api.libs.json.{Json, OFormat}
 
-  object TaxEnrolmentsKeys {
-    val serviceName = "HMRC-CGT"
-    val ninoIdentifier = "NINO"
-    val arnIdentifier = "ARN"
-    val postcodeIdentifier = "POSTCODE"
-    val cgtRefIdentifier = "CGTREF1"
-    val callbackUrl = ""
-  }
+case class RegisteredUserModel(safeId: String)
 
-  object DESKeys {
-    val cgtRegime = "HMRC-CGT"
-  }
+object RegisteredUserModel {
+  implicit val formats: OFormat[RegisteredUserModel] = Json.format[RegisteredUserModel]
 }
