@@ -183,9 +183,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     //TODO: Abstract this to app-config
     val requestUrl: String = s"$serviceUrl$serviceContext/create/${subscribeIndividualModel.sap}/subscription"
 
-    //TODO update the body of this subscription request
-
-    val response = cPOST(requestUrl, Json.toJson(subscribeIndividualModel))
+    val response = cPOST(requestUrl, Json.obj())
     val auditDetails: Map[String, String] = Map("Safe Id" -> subscribeIndividualModel.sap, "Url" -> requestUrl)
 
     response map { r =>
