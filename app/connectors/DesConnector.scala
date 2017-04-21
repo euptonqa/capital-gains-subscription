@@ -132,8 +132,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val registerGhostUrl = "/non-resident/individual/register"
 
     val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostUrl"
-    val jsonFullDetails = Json.toJson(userFactsModel)
-    val response = cPOST(requestUrl, jsonFullDetails)
+    val response = cPOST[JsValue, HttpResponse](requestUrl, userFactsModel.asRegistrationPayload)
     val auditDetails: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
 
     Logger.info("Made a post request to the stub with a url of " + requestUrl)
