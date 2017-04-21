@@ -16,7 +16,8 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.Logger
+import play.api.libs.json.{JsValue, Json, OFormat}
 
 case class CompanySubmissionModel(
                                    sap: Option[String],
@@ -24,6 +25,32 @@ case class CompanySubmissionModel(
                                    registeredAddress: Option[CompanyAddressModel]
                                  ) {
   require(CompanySubmissionModel.validateSAP(sap), s"SAP:$sap is not valid.")
+
+  def toSubscriptionPayload: JsValue = {
+    val filteredParameters = Seq(
+      "line1" -> registeredAddress.get.addressLine1.get,
+      "line2" -> registeredAddress.get.addressLine2.get,
+      "line3" -> registeredAddress.get.addressLine3,
+      "line4" -> registeredAddress.get.addressLine4,
+      "postalCode" -> {
+        if (registeredAddress.get.country.get == "GB") {
+          Logger.warn("Attempted to submit UK address without a postcode.")
+          throw new Exception("Attempted to submit UK address without a postcode.")
+        }
+        else registeredAddress.get.postCode
+      },
+      "countryCode" -> registeredAddress.get.country.get
+    ).filterNot(entry => entry._2 == None).map {
+      case (key, result: String) => (key, Json.toJsFieldJsValueWrapper(result))
+      case (key, result: Option[String]) => (key, Json.toJsFieldJsValueWrapper(result))
+    }
+
+    Json.obj(
+      "addressDetail" -> Json.obj(
+        filteredParameters: _*
+      )
+    )
+  }
 }
 
 object CompanySubmissionModel {
@@ -31,7 +58,7 @@ object CompanySubmissionModel {
 
   def validateSAP(sap: Option[String]): Boolean = {
     sap match {
-      case Some(data) => data.length.equals(15)
+      case Some(data) => data.length == 15
       case _ => true
     }
   }

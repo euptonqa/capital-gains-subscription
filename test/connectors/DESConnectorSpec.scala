@@ -21,6 +21,7 @@ import java.util.UUID
 import audit.Logging
 import common.Utilities.createRandomNino
 import config.ApplicationConfig
+import helpers.TestHelper._
 import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
@@ -180,7 +181,8 @@ class DESConnectorSpec extends UnitSpec with OneServerPerSuite with MockitoSugar
 
   "Calling .subscribeCompanyForCgt" should {
 
-    val companySubmissionModel = CompanySubmissionModel(Some(dummySap), None, None)
+    val companySubmissionModel = CompanySubmissionModel(Some(dummySap), None, Some(CompanyAddressModel(Some("line1"),
+      Some("line2"), None, None, Some("XX11 1XX"), Some("DE"))))
 
     "return a SuccessfulSubscriptionResponse when the connection returns a 200" in {
       when(mockWSHttp.POST[JsValue, HttpResponse](ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())

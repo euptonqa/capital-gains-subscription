@@ -25,7 +25,7 @@ import config.{ApplicationConfig, WSHttp}
 import models._
 import play.api.Logger
 import play.api.http.Status._
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{JsValue, Json, Writes}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -132,8 +132,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     val registerGhostUrl = "/non-resident/individual/register"
 
     val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostUrl"
-    val jsonFullDetails = Json.toJson(userFactsModel)
-    val response = cPOST(requestUrl, jsonFullDetails)
+    val response = cPOST[JsValue, HttpResponse](requestUrl, userFactsModel.asRegistrationPayload)
     val auditDetails: Map[String, String] = Map("Full details" -> userFactsModel.toString, "Url" -> requestUrl)
 
     Logger.info("Made a post request to the stub with a url of " + requestUrl)
@@ -199,7 +198,6 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  //TODO: Update this with James' PR
   def subscribeCompanyForCgt(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap)
@@ -207,7 +205,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     //TODO: Abstract this to app-config
     val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
 
-    val response = cPOST(requestUrl, Json.toJson(companySubmissionModel))
+    val response = cPOST[JsValue, HttpResponse](requestUrl, companySubmissionModel.toSubscriptionPayload)
     val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
 
     response map { r =>
