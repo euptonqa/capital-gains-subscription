@@ -26,7 +26,7 @@ class UserFactsModelSpec extends UnitSpec {
       val model = UserFactsModel("forename", "surname", "line1", "line2", None, None, None, "DE")
 
       "return a valid json value" which {
-        val json = UserFactsModel.asJson(model)
+        val json = model.asRegistrationPayload
 
         "contains acknowledgementReference" in {
           (json \ "acknowledgementReference").as[String].isEmpty shouldBe false
@@ -78,7 +78,7 @@ class UserFactsModelSpec extends UnitSpec {
       val model = UserFactsModel("forename", "surname", "line1", "line2", Some("line3"), Some("line4"), Some("XX11 1XX"), "GB")
 
       "return a valid json value" which {
-        val json = UserFactsModel.asJson(model)
+        val json = model.asRegistrationPayload
 
         "contains addressLine3" in {
           (json \ "address" \ "addressLine3").asOpt[String] shouldBe Some("line3")
@@ -103,7 +103,7 @@ class UserFactsModelSpec extends UnitSpec {
 
       "return an exception" in {
         val exception = intercept[Exception] {
-          UserFactsModel.asJson(model)
+          model.asRegistrationPayload
         }
 
         exception.getMessage shouldBe "Attempted to submit UK address without a postcode."

@@ -27,43 +27,44 @@ case class UserFactsModel(firstName: String,
                           townOrCity: Option[String],
                           county: Option[String],
                           postCode: Option[String],
-                          country: String)
+                          country: String) {
+  def asRegistrationPayload: JsValue = {
 
-object UserFactsModel {
-  implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
+    def getUniqueAckNo: String = {
+      val length = 32
+      val nanoTime = System.nanoTime()
+      val restChars = length - nanoTime.toString.length
+      val randomChars = RandomStringUtils.randomAlphanumeric(restChars)
+      randomChars + nanoTime
+    }
 
-  def getUniqueAckNo: String = {
-    val length = 32
-    val nanoTime = System.nanoTime()
-    val restChars = length - nanoTime.toString.length
-    val randomChars = RandomStringUtils.randomAlphanumeric(restChars)
-    randomChars + nanoTime
-  }
-
-  implicit val asJson: UserFactsModel => JsValue = model => {
     Json.obj(
       "acknowledgementReference" -> getUniqueAckNo,
       "isAnAgent" -> false,
       "isAGroup" -> false,
       "individual" -> Json.obj(
-        "firstName" -> model.firstName,
-        "lastName" -> model.lastName
+        "firstName" -> firstName,
+        "lastName" -> lastName
       ),
       "address" -> Json.obj(
-        "addressLine1" -> model.addressLineOne,
-        "addressLine2" -> model.addressLineTwo,
-        "addressLine3" -> model.townOrCity,
-        "addressLine4" -> model.county,
+        "addressLine1" -> addressLineOne,
+        "addressLine2" -> addressLineTwo,
+        "addressLine3" -> townOrCity,
+        "addressLine4" -> county,
         "postalCode" -> {
-          if (model.country == "GB") Some(model.postCode.getOrElse{
+          if (country == "GB") Some(postCode.getOrElse {
             Logger.warn("Attempted to submit UK address without a postcode.")
             throw new Exception("Attempted to submit UK address without a postcode.")
           })
-          else model.postCode
+          else postCode
         },
-        "countryCode" -> model.country
+        "countryCode" -> country
       ),
       "contactDetails" -> Json.obj()
     )
   }
+}
+
+object UserFactsModel {
+  implicit val formats: OFormat[UserFactsModel] = Json.format[UserFactsModel]
 }
