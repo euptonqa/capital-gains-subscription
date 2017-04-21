@@ -60,8 +60,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
-    //This function is called from the HTTPErrorFunctions of the hmrcHttp Lib
-    handleResponse(http, url)(response)
+    response
   }
 
   //TODO refactor these custom posts HTTP's
@@ -97,13 +96,13 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     //TODO: abstract part of this to app-config
-    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
+    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/${model.nino.nino}"
 
     val registerRequestBody = Json.obj(
       "regime" -> Keys.DESKeys.cgtRegime,
       "requiresNameMatch" -> false,
       "isAnAgent" -> false)
-    val response = cPOST(requestUrl, registerRequestBody)
+    val response = cPOST[JsValue, HttpResponse](requestUrl, registerRequestBody)
     val auditDetails: Map[String, String] = Map("RequestBody" -> registerRequestBody.toString(), "Url" -> requestUrl)
 
     Logger.info("Made a post request to the register individual with nino with a url of " + requestUrl)
@@ -153,10 +152,8 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   //TODO: review this entire call as there doesn't seem to be an endpoint for it at the moment and team ITSA have discovered it's never triggered.
   def getSAPForExistingBP(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-
     //TODO: Abstract this to app-config
-    val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
-
+    val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/details"
     val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", model.nino.nino)))
     val auditDetails: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> getSubscriptionUrl)
     Logger.info("Made a post request to the stub with a url of " + getSubscriptionUrl)
