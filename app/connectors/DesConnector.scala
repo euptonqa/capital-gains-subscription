@@ -201,7 +201,6 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     }
   }
 
-  //TODO: Update this with James' PR
   def subscribeCompanyForCgt(companySubmissionModel: CompanySubmissionModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap)
@@ -209,7 +208,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     //TODO: Abstract this to app-config
     val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
 
-    val response = cPOST[JsValue, HttpResponse](requestUrl, companySubmissionModel)
+    val response = cPOST[JsValue, HttpResponse](requestUrl, companySubmissionModel.toSubscriptionPayload)
     val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
 
     response map { r =>

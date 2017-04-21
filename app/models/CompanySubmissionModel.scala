@@ -16,6 +16,7 @@
 
 package models
 
+import play.api.Logger
 import play.api.libs.json.{JsValue, Json, OFormat}
 
 case class CompanySubmissionModel(
@@ -24,23 +25,36 @@ case class CompanySubmissionModel(
                                    registeredAddress: Option[CompanyAddressModel]
                                  ) {
   require(CompanySubmissionModel.validateSAP(sap), s"SAP:$sap is not valid.")
+
+  def toSubscriptionPayload: JsValue = {
+    val filteredParameters = Seq(
+      "line1" -> registeredAddress.get.addressLine1.get,
+      "line2" -> registeredAddress.get.addressLine2.get,
+      "line3" -> registeredAddress.get.addressLine3,
+      "line4" -> registeredAddress.get.addressLine4,
+      "postalCode" -> {
+        if (registeredAddress.get.country.get == "GB") {
+          Logger.warn("Attempted to submit UK address without a postcode.")
+          throw new Exception("Attempted to submit UK address without a postcode.")
+        }
+        else registeredAddress.get.postCode
+      },
+      "countryCode" -> registeredAddress.get.country.get
+    ).filterNot(entry => entry._2 == None).map {
+      case (key, result: String) => (key, Json.toJsFieldJsValueWrapper(result))
+      case (key, result: Option[String]) => (key, Json.toJsFieldJsValueWrapper(result))
+    }
+
+    Json.obj(
+      "addressDetail" -> Json.obj(
+        filteredParameters: _*
+      )
+    )
+  }
 }
 
 object CompanySubmissionModel {
   implicit val formats: OFormat[CompanySubmissionModel] = Json.format[CompanySubmissionModel]
-
-  implicit val toEtmpSubscription: CompanySubmissionModel => JsValue = model => {
-    Json.obj(
-      "addressDetail" -> Json.obj(
-        "line1" -> model.registeredAddress.get.addressLine1.get,
-        "line2" -> model.registeredAddress.get.addressLine2.get,
-        "line3" -> model.registeredAddress.get.addressLine3,
-        "line4" -> model.registeredAddress.get.addressLine4,
-        "postalCode" -> model.registeredAddress.get.postCode,
-        "countryCode" -> model.registeredAddress.get.country.get
-      )
-    )
-  }
 
   def validateSAP(sap: Option[String]): Boolean = {
     sap match {
