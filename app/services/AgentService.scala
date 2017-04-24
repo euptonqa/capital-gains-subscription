@@ -32,8 +32,8 @@ class AgentService @Inject()(taxEnrolmentsConnector: TaxEnrolmentsConnector){
   def enrolAgent(model: AgentSubmissionModel)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     val identifier = Identifier(TaxEnrolmentsKeys.arnIdentifier, model.arn)
-    val issuerModel = EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.serviceName, identifier)
-    val subscriberModel = EnrolmentSubscriberRequestModel(TaxEnrolmentsKeys.serviceName, TaxEnrolmentsKeys.callbackUrl, model.arn)
+    val issuerModel = EnrolmentIssuerRequestModel(TaxEnrolmentsKeys.cgtAgentEnrolmentKey, identifier)
+    val subscriberModel = EnrolmentSubscriberRequestModel(TaxEnrolmentsKeys.cgtAgentEnrolmentKey, TaxEnrolmentsKeys.callbackUrl, model.arn)
     val subscriberRequest = taxEnrolmentsConnector.getSubscriberAgentResponse(model.arn, Json.toJson(subscriberModel))
     val issuerRequest = taxEnrolmentsConnector.getIssuerAgentResponse(model.arn, Json.toJson(issuerModel))
 
