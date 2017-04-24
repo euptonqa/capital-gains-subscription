@@ -128,7 +128,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   def registerIndividualGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     //TODO: Abstract this to app-config
-    val registerGhostUrl = "/non-resident/individual/register"
+    val registerGhostUrl = "/registration/individual"
 
     val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostUrl"
     val response = cPOST[JsValue, HttpResponse](requestUrl, userFactsModel.asRegistrationPayload)
@@ -200,7 +200,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap)
 
     //TODO: Abstract this to app-config
-    val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
+    val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap.get}/subscription"
 
     val response = cPOST[JsValue, HttpResponse](requestUrl, companySubmissionModel.toSubscriptionPayload)
     val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
