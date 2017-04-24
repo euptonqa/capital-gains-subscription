@@ -19,7 +19,10 @@ package common
 object Keys {
 
   object TaxEnrolmentsKeys {
-    val serviceName = "HMRC-CGT"
+
+    val cgtIndividualEnrolmentKey: String = "HMRC-CGT-IND"
+    val cgtCompanyEnrolmentKey: String = "HMRC-CGT-ORG"
+    val cgtAgentEnrolmentKey: String = "HMRC-AGENT-AGENT"
     val ninoIdentifier = "NINO"
     val arnIdentifier = "ARN"
     val postcodeIdentifier = "POSTCODE"

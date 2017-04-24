@@ -58,7 +58,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
       registeredIndividualModel <- registerKnownIndividual()
       subscribedUserModel <- createIndividualSubscription(registeredIndividualModel)
       //This is not an ideal refactor but it still reads OK
-      _ <- enrolUserForCGT(registeredIndividualModel.safeId, subscribedUserModel.cgtRef)
+      _ <- enrolUserForCGT(registeredIndividualModel.safeId, subscribedUserModel.cgtRef, TaxEnrolmentsKeys.cgtIndividualEnrolmentKey)
     } yield subscribedUserModel.cgtRef
   }
 
@@ -77,7 +77,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
       registeredIndividualModel <- registerGhostIndividual()
       subscribedUserModel <- createIndividualSubscription(registeredIndividualModel)
       //This is not an ideal refactor but it still reads OK
-      _ <- enrolUserForCGT(registeredIndividualModel.safeId, subscribedUserModel.cgtRef)
+      _ <- enrolUserForCGT(registeredIndividualModel.safeId, subscribedUserModel.cgtRef, TaxEnrolmentsKeys.cgtIndividualEnrolmentKey)
     } yield subscribedUserModel.cgtRef
   }
 
@@ -101,16 +101,16 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
 
     for {
       subscribedUserModel <- createCompanySubscription()
-      _ <- enrolUserForCGT(companySubmissionModel.sap.get, subscribedUserModel.cgtRef)
+      _ <- enrolUserForCGT(companySubmissionModel.sap.get, subscribedUserModel.cgtRef, TaxEnrolmentsKeys.cgtCompanyEnrolmentKey)
     } yield subscribedUserModel.cgtRef
   }
 
   //Calling a method purely for side effects ;____;
-  private def enrolUserForCGT(sap: String, cgtRef: String)(implicit hc: HeaderCarrier): Future[Unit] = {
+  private def enrolUserForCGT(sap: String, cgtRef: String, serviceToEnrol: String)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     //Avoided refactoring TaxEnrollments connector as I'm told we may not be using it for much longer.
     val taxEnrolmentsIssuerRequestBody = Json.obj(
-      "serviceName" -> "CGT",
+      "serviceName" -> serviceToEnrol,
       "identifiers" -> Json.obj(
         "name" -> "cgtRef",
         "value" -> cgtRef
@@ -127,7 +127,7 @@ class RegistrationSubscriptionService @Inject()(desConnector: DesConnector, taxE
     )
 
     val taxEnrolmentsSubscriberRequestBody = Json.obj(
-      "serviceName" -> "CGT",
+      "serviceName" -> serviceToEnrol,
       "callbackUrl" -> TaxEnrolmentsKeys.callbackUrl,
       "etmpId" -> sap
     )
