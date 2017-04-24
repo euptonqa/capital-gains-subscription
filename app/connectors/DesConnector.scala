@@ -60,8 +60,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   }
 
   private[connectors] def customDESRead(http: String, url: String, response: HttpResponse) = {
-    //This function is called from the HTTPErrorFunctions of the hmrcHttp Lib
-    handleResponse(http, url)(response)
+    response
   }
 
   //TODO refactor these custom posts HTTP's
@@ -103,7 +102,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
       "regime" -> Keys.DESKeys.cgtRegime,
       "requiresNameMatch" -> false,
       "isAnAgent" -> false)
-    val response = cPOST(requestUrl, registerRequestBody)
+    val response = cPOST[JsValue, HttpResponse](requestUrl, registerRequestBody)
     val auditDetails: Map[String, String] = Map("RequestBody" -> registerRequestBody.toString(), "Url" -> requestUrl)
 
     Logger.info("Made a post request to the register individual with nino with a url of " + requestUrl)
@@ -129,7 +128,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   def registerIndividualGhost(userFactsModel: UserFactsModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     //TODO: Abstract this to app-config
-    val registerGhostUrl = "/non-resident/individual/register"
+    val registerGhostUrl = "/registration/individual"
 
     val requestUrl: String = s"$serviceUrl$serviceContext$registerGhostUrl"
     val response = cPOST[JsValue, HttpResponse](requestUrl, userFactsModel.asRegistrationPayload)
@@ -153,10 +152,8 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
 
   //TODO: review this entire call as there doesn't seem to be an endpoint for it at the moment and team ITSA have discovered it's never triggered.
   def getSAPForExistingBP(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
-
     //TODO: Abstract this to app-config
-    val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
-
+    val getSubscriptionUrl = s"$serviceUrl$serviceContext/registration/details"
     val response = cGET[HttpResponse](getSubscriptionUrl, Seq(("nino", model.nino.nino)))
     val auditDetails: Map[String, String] = Map("Nino" -> model.nino.nino, "Url" -> getSubscriptionUrl)
     Logger.info("Made a post request to the stub with a url of " + getSubscriptionUrl)
@@ -203,7 +200,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
     Logger.info("Made a post request to the stub with a company subscribers sap of " + companySubmissionModel.sap)
 
     //TODO: Abstract this to app-config
-    val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap}/subscription"
+    val requestUrl: String = s"$serviceUrl$serviceContext/create/${companySubmissionModel.sap.get}/subscription"
 
     val response = cPOST[JsValue, HttpResponse](requestUrl, companySubmissionModel.toSubscriptionPayload)
     val auditDetails: Map[String, String] = Map("Safe Id" -> companySubmissionModel.sap.get, "Url" -> requestUrl)
