@@ -96,7 +96,7 @@ class DesConnector @Inject()(appConfig: ApplicationConfig, logger: Logging) exte
   def registerIndividualWithNino(model: RegisterIndividualModel)(implicit hc: HeaderCarrier): Future[DesResponse] = {
 
     //TODO: abstract part of this to app-config
-    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/${model.nino.nino}"
+    val requestUrl = s"$serviceUrl$serviceContext/registration/individual/nino/${model.nino.nino}"
 
     val registerRequestBody = Json.obj(
       "regime" -> Keys.DESKeys.cgtRegime,
